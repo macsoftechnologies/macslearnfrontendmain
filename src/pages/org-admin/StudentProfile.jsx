@@ -63,7 +63,7 @@ export default function StudentProfile() {
       setData(studentRes.data?.data || studentRes.data);
       setQuestions(questionsRes.data?.data || questionsRes.data || []);
       setProgramsList(programsRes.data?.data || programsRes.data || []);
-      if (arguments[0] && arguments[0][3]) setCyclicStatus(arguments[0][3]);
+      
     }).catch((err) => {
       console.error('Failed to load student profile', err);
     }).finally(() => {

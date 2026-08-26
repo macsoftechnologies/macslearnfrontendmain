@@ -308,8 +308,10 @@ const SemestersPage = () => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', padding: '0.75rem', background: 'var(--bg-surface)', borderRadius: '8px', fontSize: '0.82rem' }}>
                     <div>
-                      <span style={{ color: 'var(--text-muted)', display: 'block' }}>Semesters</span>
-                      <strong style={{ color: 'var(--text-primary)' }}>{prog.totalSemesters || 6} Terms</strong>
+                      <span style={{ color: 'var(--text-muted)', display: 'block' }}>Duration</span>
+                      <strong style={{ color: 'var(--text-primary)' }}>
+                        {prog.maxDurationYears ? `${prog.maxDurationYears} Years` : (prog.totalSemesters ? `${Math.ceil(prog.totalSemesters / 2)} Years` : '3 Years')}
+                      </strong>
                     </div>
                     <div>
                       <span style={{ color: 'var(--text-muted)', display: 'block' }}>Total Subjects</span>
