@@ -1,0 +1,70 @@
+/* ==========================================================================
+   Pagination — Premium Pill-Style with Gradient Active Indicator
+   ========================================================================== */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-5) 2px 0;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.pagination__count {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pagination__btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.pagination__btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.pagination__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.pagination__btn--active {
+  background: var(--gradient-hero);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+  transform: scale(1.05);
+}
+
+.pagination__btn--active:hover:not(:disabled) {
+  background: var(--gradient-hero);
+  color: #FFFFFF;
+  transform: scale(1.08) translateY(-1px);
+}
+
+.pagination__ellipsis {
+  color: var(--text-muted);
+  padding: 0 4px;
+  font-weight: 600;
+}

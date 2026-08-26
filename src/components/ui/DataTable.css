@@ -1,0 +1,134 @@
+/* ==========================================================================
+   DataTable — Premium with Frosted Header, Row Animations, Zebra Stripes
+   ========================================================================== */
+
+.dtable-wrap {
+  width: 100%;
+  min-height: 220px;
+  overflow-x: auto;
+  background: var(--bg-surface-card);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm), var(--shadow-inset-glow);
+  scroll-behavior: smooth;
+  animation: stagger-slide-up 500ms var(--ease-out-expo) backwards;
+  animation-delay: 100ms;
+}
+
+.dtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+
+.dtable thead th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 16px 20px;
+  border: 1px solid var(--border-subtle);
+  background: var(--glass-heavy);
+  backdrop-filter: var(--backdrop-blur-heavy);
+  -webkit-backdrop-filter: var(--backdrop-blur-heavy);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Gradient underline on header */
+.dtable thead tr {
+  position: relative;
+}
+
+.dtable thead th:first-child {
+  border-radius: var(--radius-lg) 0 0 0;
+}
+
+.dtable thead th:last-child {
+  border-radius: 0 var(--radius-lg) 0 0;
+}
+
+.dtable tbody td {
+  padding: 18px 20px;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  vertical-align: middle;
+  transition: all var(--transition-fast);
+}
+
+
+/* Zebra striping */
+.dtable tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.dtable tbody tr {
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+/* Row hover with left accent indicator and subtle pop */
+.dtable tbody tr:hover td {
+  background: var(--bg-surface-hover, rgba(0, 0, 0, 0.02));
+  color: var(--text-primary);
+}
+
+.dtable tbody tr:hover td:first-child {
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+/* Stagger row entrance */
+.dtable tbody tr {
+  animation: stagger-slide-up 350ms var(--ease-out-expo) backwards;
+}
+.dtable tbody tr:nth-child(1) { animation-delay: 50ms; }
+.dtable tbody tr:nth-child(2) { animation-delay: 100ms; }
+.dtable tbody tr:nth-child(3) { animation-delay: 150ms; }
+.dtable tbody tr:nth-child(4) { animation-delay: 200ms; }
+.dtable tbody tr:nth-child(5) { animation-delay: 250ms; }
+.dtable tbody tr:nth-child(6) { animation-delay: 300ms; }
+.dtable tbody tr:nth-child(7) { animation-delay: 350ms; }
+.dtable tbody tr:nth-child(8) { animation-delay: 400ms; }
+.dtable tbody tr:nth-child(9) { animation-delay: 450ms; }
+.dtable tbody tr:nth-child(10) { animation-delay: 500ms; }
+
+.dtable__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-12) 0;
+  color: var(--text-secondary);
+}
+
+.dtable__empty svg {
+  animation: gentle-bob 3s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+/* Enhanced skeleton with richer shimmer */
+.skeleton-bar {
+  display: block;
+  height: 16px;
+  width: 80%;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0%, rgba(99, 102, 241, 0.08) 20%, rgba(139, 92, 246, 0.08) 40%, rgba(255, 255, 255, 0.02) 100%);
+  background-size: 400% 100%;
+  animation: shimmer-sweep 1.8s ease infinite;
+}
+
+.dtable tfoot .dtable-footer-row td {
+  background: var(--bg-surface-hover, rgba(99, 102, 241, 0.04));
+  border-top: 2px solid var(--border-strong, #cbd5e1);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+}

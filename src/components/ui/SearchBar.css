@@ -1,0 +1,58 @@
+/* ==========================================================================
+   SearchBar — Premium Expandable with Glassmorphic Background
+   ========================================================================== */
+
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0 14px;
+  min-width: 240px;
+  height: 42px;
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.searchbar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light), 0 0 20px rgba(99, 102, 241, 0.1);
+  min-width: 320px;
+  background: var(--bg-surface-card);
+}
+
+.searchbar__icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+
+.searchbar:focus-within .searchbar__icon {
+  color: var(--accent);
+}
+
+.searchbar input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: var(--fs-sm);
+  background: transparent;
+  color: var(--text-primary);
+  height: 100%;
+}
+
+.searchbar__clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  display: flex;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+.searchbar__clear:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+}

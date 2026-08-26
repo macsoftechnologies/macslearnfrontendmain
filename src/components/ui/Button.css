@@ -1,0 +1,133 @@
+/* ==========================================================================
+   Button — Premium with Ripple, Shimmer Loading, Icon Animations
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.01em;
+}
+
+/* Ripple effect container */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255, 255, 255, 0.25) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.btn:active::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* Icon micro-animation on hover */
+.btn:hover:not(:disabled) svg {
+  transform: scale(1.1);
+  transition: transform 200ms var(--ease-bounce);
+}
+
+.btn--sm { padding: 6px 14px; font-size: var(--fs-xs); border-radius: var(--radius-sm); }
+.btn--md { padding: 10px 20px; font-size: var(--fs-sm); }
+.btn--lg { padding: 13px 28px; font-size: var(--fs-base); }
+
+.btn--full { width: 100%; }
+
+.btn--primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--color-violet-500) 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3), var(--shadow-inset-glow);
+}
+.btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-indigo-400) 0%, var(--accent) 100%);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45), 0 0 20px rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn--secondary {
+  background: linear-gradient(135deg, var(--color-cyan-500) 0%, var(--accent) 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25), var(--shadow-inset-glow);
+}
+.btn--secondary:hover:not(:disabled) {
+  box-shadow: 0 8px 24px rgba(6, 182, 212, 0.4), 0 0 20px rgba(6, 182, 212, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn--outline {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-inset-glow);
+}
+.btn--outline:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--text-accent);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.15);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.btn--ghost:hover:not(:disabled) {
+  background: var(--accent-light);
+  color: var(--text-accent);
+}
+
+.btn--danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.btn--danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: #FFFFFF;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Shimmer loading state */
+.btn__spin { animation: btn-spin 0.7s linear infinite; }
+
+.btn--loading {
+  position: relative;
+  color: transparent !important;
+}
+.btn--loading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  background-size: 200% 100%;
+  animation: shimmer-sweep 1.5s ease infinite;
+}
+
+@keyframes btn-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

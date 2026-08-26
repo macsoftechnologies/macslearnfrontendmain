@@ -1,0 +1,144 @@
+/* ==========================================================================
+   Drawer — Premium with Staggered Reveal & Gradient Header
+   ========================================================================== */
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 17, 0.8);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+  animation: drawer-fade-in 0.25s ease-out forwards;
+}
+
+.drawer-overlay.closing {
+  animation: drawer-fade-out 0.2s ease-in forwards;
+}
+
+.drawer-container {
+  background: var(--bg-surface-card);
+  backdrop-filter: var(--backdrop-blur-heavy);
+  -webkit-backdrop-filter: var(--backdrop-blur-heavy);
+  border-left: 1px solid var(--border-strong);
+  width: 100%;
+  max-width: var(--drawer-width, 540px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 48px rgba(0, 0, 0, 0.5), -4px 0 24px var(--accent-glow);
+  animation: drawer-slide-in 0.35s var(--ease-out-expo) forwards;
+  will-change: transform;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradient accent bar on left edge */
+.drawer-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--gradient-accent-bar);
+  z-index: 3;
+}
+
+.drawer-overlay.closing .drawer-container {
+  animation: drawer-slide-out 0.25s var(--ease-smooth) forwards;
+}
+
+.drawer-header {
+  padding: var(--sp-5) var(--sp-6);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--glass-heavy);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.drawer-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.drawer-subtitle {
+  margin: 4px 0 0;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+
+.drawer-close {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.drawer-close:hover {
+  background: var(--danger-bg);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--danger);
+  transform: rotate(90deg);
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-6);
+}
+
+/* Stagger child elements in drawer body */
+.drawer-body > * {
+  animation: stagger-slide-up 350ms var(--ease-out-expo) backwards;
+}
+.drawer-body > *:nth-child(1) { animation-delay: 100ms; }
+.drawer-body > *:nth-child(2) { animation-delay: 160ms; }
+.drawer-body > *:nth-child(3) { animation-delay: 220ms; }
+.drawer-body > *:nth-child(4) { animation-delay: 280ms; }
+.drawer-body > *:nth-child(5) { animation-delay: 340ms; }
+.drawer-body > *:nth-child(6) { animation-delay: 400ms; }
+
+.drawer-footer {
+  padding: var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--glass-heavy);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+@keyframes drawer-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes drawer-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes drawer-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes drawer-slide-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}

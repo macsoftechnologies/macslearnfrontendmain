@@ -1,0 +1,56 @@
+/* ==========================================================================
+   ConfirmDialog — Premium with Animated Icon & Enhanced Buttons
+   ========================================================================== */
+
+.confirm-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) 0;
+}
+
+.confirm-dialog__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--sp-3);
+  animation: icon-bounce 0.5s var(--ease-bounce);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.confirm-dialog__icon--danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.2);
+  animation: icon-shake 0.5s ease;
+}
+
+.confirm-dialog h3 {
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+.confirm-dialog p {
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  gap: var(--sp-3);
+  width: 100%;
+  margin-top: var(--sp-5);
+}
+
+.confirm-dialog__actions .btn {
+  flex: 1;
+}

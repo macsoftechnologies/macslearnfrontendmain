@@ -1,0 +1,53 @@
+/* ==========================================================================
+   Toggle — Premium with Gradient Track & Glow Thumb
+   ========================================================================== */
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.toggle input { display: none; }
+
+.toggle__track {
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  transition: all 300ms var(--ease-bounce);
+  flex-shrink: 0;
+}
+
+.toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
+  transition: all 300ms var(--ease-bounce);
+}
+
+.toggle input:checked + .toggle__track {
+  background: linear-gradient(135deg, var(--accent), var(--color-violet-500));
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.toggle input:checked + .toggle__track .toggle__thumb {
+  transform: translateX(20px);
+  background: #FFFFFF;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.toggle__label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}

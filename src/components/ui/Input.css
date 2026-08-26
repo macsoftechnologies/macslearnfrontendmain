@@ -1,0 +1,161 @@
+﻿/* ==========================================================================
+   Input â€” Premium with Animated Focus Border & Glow
+   ========================================================================== */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color var(--transition-fast);
+}
+
+.field:focus-within .field__label {
+  color: var(--text-accent);
+}
+
+.field__req {
+  color: var(--danger);
+}
+
+.field__error {
+  font-size: var(--fs-xs);
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: slide-down-fade 200ms ease-out;
+}
+
+.field__hint {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-surface-hover);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-surface-card);
+  box-shadow: 0 0 0 3px var(--accent-light), 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+.field--error .input {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-bg);
+  animation: icon-shake 0.4s ease;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 96px;
+  font-family: inherit;
+}
+
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+}
+
+.select option {
+  background: var(--bg-surface-card);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.select[multiple] {
+  background-image: none;
+  padding: 6px;
+}
+
+.select option:checked {
+  background-color: var(--accent);
+  color: #fff;
+}
+
+.input-wrap {
+  position: relative;
+}
+
+.input-wrap .input {
+  padding-right: 42px;
+}
+
+.input-wrap__toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  display: flex;
+  padding: 4px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.input-wrap__toggle:hover {
+  color: var(--text-accent);
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: var(--calendar-icon-filter, invert(1));
+  cursor: pointer;
+}
+
+
+
+/* Ensure high contrast input styling and fix browser autofill transparency / whiteout */
+.input {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-subtle);
+}
+
+.input:focus {
+  background-color: var(--bg-surface-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover, 
+.input:-webkit-autofill:focus, 
+.input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--bg-surface) inset !important;
+  box-shadow: 0 0 0px 1000px var(--bg-surface) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
