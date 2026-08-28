@@ -116,9 +116,15 @@ const BatchesPage = () => {
 
   const openEdit = (batch) => {
     setEditId(batch.id);
+    const matchedProg = programs.find(p => 
+      (p.id || p._id) === batch.programId || 
+      p.name?.toLowerCase().trim() === String(batch.degreeName || '').toLowerCase().trim()
+    );
+    const resolvedProgId = matchedProg ? (matchedProg.id || matchedProg._id) : (batch.programId || '');
+
     setFormData({ 
       name: batch.name, 
-      programId: batch.programId || '',
+      programId: resolvedProgId,
       startDate: batch.startDate ? batch.startDate.substring(0, 10) : '',
       endDate: batch.endDate ? batch.endDate.substring(0, 10) : '',
       enrollmentOpenDate: batch.enrollmentOpenDate ? batch.enrollmentOpenDate.substring(0, 10) : '',
@@ -228,9 +234,27 @@ const BatchesPage = () => {
               <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
             </Field>
             <Field label="Program" required style={{ flex: 1 }}>
-              <Select value={formData.programId} onChange={e => setFormData({...formData, programId: e.target.value})}>
+              <Select 
+                value={formData.programId} 
+                onChange={e => {
+                  const pId = e.target.value;
+                  const p = programs.find(item => (item.id || item._id) === pId);
+                  const dur = p?.maxDurationYears || (p?.totalSemesters ? Math.ceil(p.totalSemesters / 2) : 3);
+                  
+                  let newEnd = formData.endDate;
+                  if (formData.startDate && dur) {
+                    const s = new Date(formData.startDate);
+                    if (!isNaN(s.getTime())) {
+                      s.setFullYear(s.getFullYear() + dur);
+                      s.setDate(s.getDate() - 1);
+                      newEnd = s.toISOString().substring(0, 10);
+                    }
+                  }
+                  setFormData({...formData, programId: pId, endDate: newEnd });
+                }}
+              >
                 <option value="">-- Select Program --</option>
-                {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {programs.map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
               </Select>
             </Field>
           </div>
