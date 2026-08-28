@@ -36,10 +36,11 @@ export default function AIAssistantPanel({
     }
   }, [aiPanelOpen]);
 
-  const summary = aiData?.summary || activeLesson?.description || 'No summary available for this lecture.';
-  const quizPool = Array.isArray(aiData?.quiz_pool) ? aiData.quiz_pool : [];
-  const backstory = Array.isArray(aiData?.backstory) ? aiData.backstory : [];
-  const keyTakeaways = Array.isArray(aiData?.key_takeaways) ? aiData.key_takeaways : [];
+  const payload = aiData?.data || aiData || {};
+  const summary = payload?.summary || activeLesson?.description || 'No summary available for this lecture.';
+  const quizPool = Array.isArray(payload?.quiz_pool) ? payload.quiz_pool : [];
+  const backstory = Array.isArray(payload?.backstory) ? payload.backstory : [];
+  const keyTakeaways = Array.isArray(payload?.key_takeaways) ? payload.key_takeaways : [];
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);

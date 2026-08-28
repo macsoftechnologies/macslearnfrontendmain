@@ -648,8 +648,9 @@ export default function CoursePlayer() {
       const lessonId = activeLesson?.id || activeLesson?._id;
       if (courseId && lessonId) {
         const res = await client.get(`/courses/${courseId}/content/lessons/${lessonId}/ai-data`);
-        if (res.data?.data) {
-          setAiData(res.data.data);
+        const payload = res.data?.data?.data || res.data?.data || res.data;
+        if (payload) {
+          setAiData(payload);
         }
       }
     } catch (err) {
