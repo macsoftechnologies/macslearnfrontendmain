@@ -202,7 +202,7 @@ const BatchesPage = () => {
         emptyLabel="No batches found."
         columns={[
           { key: 'name', header: 'Batch Name' },
-          { key: 'programId', header: 'Program', render: (r) => programs.find(p => p.id === r.programId)?.name || 'Unknown' },
+          { key: 'programId', header: 'Program', render: (r) => r.program?.name || programs.find(p => (p.id || p._id) === r.programId)?.name || (r.degreeName && r.degreeName !== 'N/A' && r.degreeName !== 'General Track' ? r.degreeName : 'All Programs (Shared Intake)') },
           { key: 'currentEnrolledCount', header: 'Students', render: (r) => (batchStudentCounts[r.id] ?? r.currentEnrolledCount ?? 0) },
           { key: 'totalSubjects', header: 'Total Subjects', render: (r) => programs.find(p => p.id === r.programId)?.totalSubjects || 30 },
           { key: 'status', header: 'Status', render: (r) => <span className={`badge badge-${r.status === 'ACTIVE' ? 'success' : 'default'}`}>{r.status}</span> },
