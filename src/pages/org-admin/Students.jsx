@@ -96,14 +96,40 @@ export default function Students() {
   };
 
   const openApproveModal = (student) => {
-    const selectedProg = student.programId || student.customProfile?.interestedCourse || '';
+    const selectedProgId = student.programId || student.customProfile?.interestedCourse || '';
+    const prog = programs.find(p => (p.id || p._id) === selectedProgId);
+    
     const now = new Date();
-    const isFirstHalf = now.getMonth() < 6;
+    const currentMonth = now.getMonth();
     const year = now.getFullYear();
-    const autoBatchName = isFirstHalf ? `Jan - June ${year} Batch (Auto)` : `July - Dec ${year} Batch (Auto)`;
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    let autoBatchName = '';
+    const rcList = Array.isArray(prog?.regionConfigs) ? prog.regionConfigs : [];
+    const matchedRc = rcList.find(c => c.hasFixedBatches && c.batchDateRanges?.length > 0) || rcList[0];
+
+    if (matchedRc?.hasFixedBatches && matchedRc?.batchDateRanges?.length > 0) {
+      let matchedRange = matchedRc.batchDateRanges.find(range => {
+        const sM = monthNames.indexOf(range.startMonth);
+        const eM = monthNames.indexOf(range.endMonth);
+        if (sM === -1 || eM === -1) return false;
+        if (sM <= eM) return currentMonth >= sM && currentMonth <= eM;
+        return currentMonth >= sM || currentMonth <= eM;
+      });
+      if (!matchedRange) matchedRange = matchedRc.batchDateRanges[0];
+
+      if (matchedRange) {
+        autoBatchName = `${matchedRange.startMonth.slice(0, 3)} - ${matchedRange.endMonth.slice(0, 3)} ${year} Batch (Auto)`;
+      }
+    }
+
+    if (!autoBatchName) {
+      const isFirstHalf = currentMonth < 6;
+      autoBatchName = isFirstHalf ? `Jan - June ${year} Batch (Auto)` : `July - Dec ${year} Batch (Auto)`;
+    }
 
     setApprovalForm({
-      programId: selectedProg,
+      programId: selectedProgId,
       batchId: student.batchId || '',
       semesterId: student.semesterId || '',
       admissionNotes: 'Interview cleared. Application approved.',
@@ -361,7 +387,38 @@ export default function Students() {
             <Field label="Assign Program">
               <Select 
                 value={approvalForm.programId} 
-                onChange={(e) => setApprovalForm(f => ({ ...f, programId: e.target.value }))}
+                onChange={(e) => {
+                  const newProgId = e.target.value;
+                  const prog = programs.find(p => (p.id || p._id) === newProgId);
+                  const now = new Date();
+                  const currentMonth = now.getMonth();
+                  const year = now.getFullYear();
+                  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+                  let autoBatchName = '';
+                  const rcList = Array.isArray(prog?.regionConfigs) ? prog.regionConfigs : [];
+                  const matchedRc = rcList.find(c => c.hasFixedBatches && c.batchDateRanges?.length > 0) || rcList[0];
+
+                  if (matchedRc?.hasFixedBatches && matchedRc?.batchDateRanges?.length > 0) {
+                    let matchedRange = matchedRc.batchDateRanges.find(range => {
+                      const sM = monthNames.indexOf(range.startMonth);
+                      const eM = monthNames.indexOf(range.endMonth);
+                      if (sM === -1 || eM === -1) return false;
+                      if (sM <= eM) return currentMonth >= sM && currentMonth <= eM;
+                      return currentMonth >= sM || currentMonth <= eM;
+                    });
+                    if (!matchedRange) matchedRange = matchedRc.batchDateRanges[0];
+                    if (matchedRange) {
+                      autoBatchName = `${matchedRange.startMonth.slice(0, 3)} - ${matchedRange.endMonth.slice(0, 3)} ${year} Batch (Auto)`;
+                    }
+                  }
+
+                  if (!autoBatchName) {
+                    autoBatchName = currentMonth < 6 ? `Jan - June ${year} Batch (Auto)` : `July - Dec ${year} Batch (Auto)`;
+                  }
+
+                  setApprovalForm(f => ({ ...f, programId: newProgId, autoBatchName }));
+                }}
               >
                 <option value="">-- Select Program --</option>
                 {programs.map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
