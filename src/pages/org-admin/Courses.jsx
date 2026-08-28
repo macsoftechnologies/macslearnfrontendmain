@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, BookOpen, PlayCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import usePagination from '../../hooks/usePagination';
 import useDebounce from '../../hooks/useDebounce';
@@ -118,6 +118,27 @@ export default function Courses() {
               >
                 {r.title}
               </Link>
+            )
+          },
+          { 
+            key: 'videosCount', 
+            header: 'Videos',
+            render: (r) => (
+              <span style={{ 
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#eff6ff', 
+                color: '#1d4ed8', 
+                padding: '4px 10px', 
+                borderRadius: '12px', 
+                fontSize: '12px', 
+                fontWeight: 700,
+                border: '1px solid #bfdbfe'
+              }}>
+                <PlayCircle size={14} />
+                {r.videosCount ?? r.totalVideos ?? 0} { (r.videosCount ?? r.totalVideos) === 1 ? 'Video' : 'Videos' }
+              </span>
             )
           },
           { 

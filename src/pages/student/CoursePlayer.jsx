@@ -645,8 +645,9 @@ export default function CoursePlayer() {
     const t3 = setTimeout(() => setThinkingPhase(3), 2400);
 
     try {
-      if (courseId && activeLesson?.id) {
-        const res = await client.get(`/courses/${courseId}/content/lessons/${activeLesson.id}/ai-data`);
+      const lessonId = activeLesson?.id || activeLesson?._id;
+      if (courseId && lessonId) {
+        const res = await client.get(`/courses/${courseId}/content/lessons/${lessonId}/ai-data`);
         if (res.data?.data) {
           setAiData(res.data.data);
         }
