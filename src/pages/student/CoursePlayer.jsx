@@ -21,7 +21,7 @@ import AIAssistantPanel, { AIFab } from '../../components/course/AIAssistantPane
 import AttachmentPreviewModal from '../../components/course/AttachmentPreviewModal';
 import ReactPlayer from 'react-player';
 const Player = ReactPlayer.default ? ReactPlayer.default : ReactPlayer;
-import { DocumentViewer } from '../org-admin/LessonPreview';
+import DocumentViewer from '../../components/course/DocumentViewer';
 import './CoursePlayer.css';
 
 // --- Animated Video Overlay Component ---
@@ -239,7 +239,9 @@ function AnimatedVideoOverlay({ overlay, onDismiss }) {
 
 const getPlayerUrl = (url) => {
   if (!url) return { url: '' };
-  let trimmed = url.trim();
+  const strUrl = typeof url === 'string' ? url : (url?.url || '');
+  if (!strUrl || typeof strUrl !== 'string') return { url: '' };
+  let trimmed = strUrl.trim();
   if (trimmed.toLowerCase().startsWith('<iframe')) {
     const match = trimmed.match(/src=["'](.*?)["']/);
     if (match && match[1]) trimmed = match[1];
@@ -302,6 +304,7 @@ export default function CoursePlayer() {
   const [completing, setCompleting] = useState(false);
   const [discussionSidebarOpen, setDiscussionSidebarOpen] = useState(false);
   const [previewContentUrl, setPreviewContentUrl] = useState(null);
+  const [selectedAttachmentIndex, setSelectedAttachmentIndex] = useState(0);
   const [iframeLoading, setIframeLoading] = useState(true);
   const [currentPlaybackSeconds, setCurrentPlaybackSeconds] = useState(0);
   const [dismissedOverlayLessonId, setDismissedOverlayLessonId] = useState(null);
@@ -404,7 +407,8 @@ export default function CoursePlayer() {
 
       const isExpError = [modsRes, progRes, courseRes, examsRes].some(r => {
         if (r.status === 'rejected') {
-          const msg = extractErrorMessages(r.reason).join(' ').toLowerCase();
+          const rawMsg = extractErrorMessages(r.reason);
+          const msg = Array.isArray(rawMsg) ? rawMsg.join(' ').toLowerCase() : String(rawMsg || '').toLowerCase();
           return msg.includes('expired');
         }
         return false;
@@ -437,7 +441,9 @@ export default function CoursePlayer() {
       for (const mod of mods) {
         const mId = mod._id || mod.id;
         const res = await contentApi.listLessons(courseId, mId).catch((err) => {
-          if (extractErrorMessages(err).join(' ').toLowerCase().includes('expired')) {
+          const rawErr = extractErrorMessages(err);
+          const errStr = Array.isArray(rawErr) ? rawErr.join(' ').toLowerCase() : String(rawErr || '').toLowerCase();
+          if (errStr.includes('expired')) {
             setIsExpired(true);
           }
           return null;
@@ -686,6 +692,8 @@ export default function CoursePlayer() {
       <div className="player">
         <PlayerSidebar
           course={course}
+          selectedAttachmentIndex={selectedAttachmentIndex}
+          setSelectedAttachmentIndex={setSelectedAttachmentIndex}
           progress={progress}
           modules={modules}
           lessonsByModule={lessonsByModule}
@@ -821,18 +829,58 @@ export default function CoursePlayer() {
                   {/* Quiz Results */}
                   <QuizResults myAnswers={myAnswers} />
 
-                  {/* Interactive Document / PPT / PDF / Presentation */}
-                  {(!activeLesson.videoUrl && (activeLesson.documentUrl || activeLesson.contentUrl || activeLesson.attachments?.length > 0)) && (
-                    <div style={{ marginBottom: 'var(--sp-6)' }}>
-                      <DocumentViewer
-                        url={activeLesson.documentUrl || activeLesson.contentUrl || activeLesson.attachments?.[0]?.url}
-                        title={activeLesson.attachments?.[0]?.name || activeLesson.title}
-                        fileName={activeLesson.attachments?.[0]?.name}
-                        size={activeLesson.attachments?.[0]?.size}
-                        height="760px"
-                      />
-                    </div>
-                  )}
+                  {/* Interactive Document / PPT / PDF / Presentation (for both document lessons and video lessons with attachments) */}
+                  {(activeLesson.documentUrl || activeLesson.contentUrl || activeLesson.attachments?.length > 0) && (() => {
+                    const currentAtt = (activeLesson.attachments && activeLesson.attachments[selectedAttachmentIndex])
+                      ? activeLesson.attachments[selectedAttachmentIndex]
+                      : (activeLesson.attachments?.[0] || null);
+
+                    const activeDocUrl = currentAtt?.url || activeLesson.documentUrl || activeLesson.contentUrl;
+                    const activeDocName = currentAtt?.name || activeLesson.title;
+                    const activeDocSize = currentAtt?.size;
+
+                    return (
+                      <div style={{ marginTop: activeLesson.videoUrl ? 'var(--sp-6)' : 0, marginBottom: 'var(--sp-6)' }}>
+                        {activeLesson.attachments?.length > 1 && (
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>Attachments:</span>
+                            {activeLesson.attachments.map((att, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setSelectedAttachmentIndex(idx)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '6px 14px',
+                                  borderRadius: '8px',
+                                  fontSize: '13px',
+                                  fontWeight: selectedAttachmentIndex === idx ? 700 : 500,
+                                  border: selectedAttachmentIndex === idx ? '2px solid var(--brand, #2563eb)' : '1px solid var(--border-subtle, #cbd5e1)',
+                                  background: selectedAttachmentIndex === idx ? 'var(--brand-surface, #eff6ff)' : '#fff',
+                                  color: selectedAttachmentIndex === idx ? 'var(--brand, #2563eb)' : '#334155',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s'
+                                }}
+                              >
+                                <FileText size={14} color={selectedAttachmentIndex === idx ? 'var(--brand, #2563eb)' : '#64748b'} />
+                                <span>{att.name || `Document ${idx + 1}`}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <DocumentViewer
+                          url={activeDocUrl}
+                          title={activeDocName}
+                          fileName={activeDocName}
+                          size={activeDocSize}
+                          height="760px"
+                        />
+                      </div>
+                    );
+                  })()}
 
                   {/* Text content */}
                   {activeLesson.content && (

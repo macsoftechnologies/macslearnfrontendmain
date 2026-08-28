@@ -224,8 +224,15 @@ export function DocumentViewer({ url, title, fileName, size, height = '700px' })
 
   if (!url) return null;
 
-  const rawUrl = buildStaticUrl(url);
-  const ext = (rawUrl.split('.').pop() || '').toLowerCase().split('?')[0];
+  const strUrl = typeof url === 'string' ? url : (url?.url || '');
+  if (!strUrl || typeof strUrl !== 'string') return null;
+
+  const rawUrl = buildStaticUrl(strUrl);
+  let fullPublicUrl = typeof rawUrl === 'string' ? rawUrl : '';
+  if (fullPublicUrl.startsWith('/')) {
+    fullPublicUrl = window.location.origin + fullPublicUrl;
+  }
+  const ext = (typeof fullPublicUrl === 'string' ? fullPublicUrl.split('.').pop() || '' : '').toLowerCase().split('?')[0];
 
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
   const isPdf = ext === 'pdf';

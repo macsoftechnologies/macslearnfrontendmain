@@ -12,6 +12,8 @@ const formatDuration = (minutes) => {
 };
 
 export default function PlayerSidebar({
+  selectedAttachmentIndex,
+  setSelectedAttachmentIndex,
   course,
   progress,
   modules,
@@ -102,7 +104,11 @@ export default function PlayerSidebar({
                         <button
                           key={i}
                           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-primary)', transition: 'all 0.2s' }}
-                          onClick={(e) => { e.stopPropagation(); setIframeLoading(true); setPreviewContentUrl(att.url); }}
+                          onClick={(e) => { 
+    e.stopPropagation(); 
+    if (setSelectedAttachmentIndex) setSelectedAttachmentIndex(i);
+    else setPreviewContentUrl(att.url);
+  }}
                           onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--brand)'}
                           onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
                         >
