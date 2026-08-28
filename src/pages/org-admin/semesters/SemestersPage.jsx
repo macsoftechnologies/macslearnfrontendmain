@@ -175,6 +175,67 @@ const SemestersPage = () => {
   };
 
   // Open Course Assignment modal
+  
+  const syncMasterCurriculum = async (targetProgram) => {
+    if (!targetProgram) return;
+    const mDivProg = programs.find(p => /master of divinity/i.test(p.name) && !/upgrader/i.test(p.name));
+    if (!mDivProg) {
+      toast.error('Master of Divinity base program not found.');
+      return;
+    }
+
+    const mDivSems = semesters.filter(s => s.programId === mDivProg.id);
+    if (mDivSems.length === 0) {
+      toast.error('Please configure the 6 Master of Divinity semesters first.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. If target program doesn't have 6 rolling terms, generate them
+      const targetSems = semesters.filter(s => s.programId === targetProgram.id);
+      let activeTargetSems = [...targetSems];
+
+      if (activeTargetSems.length < 6) {
+        const missingCount = 6 - activeTargetSems.length;
+        const startIndex = activeTargetSems.length;
+        const toCreate = Array.from({ length: missingCount }, (_, i) => ({
+          name: 'Semester ' + (startIndex + i + 1),
+          term: 'Semester ' + (startIndex + i + 1),
+          semesterNumber: startIndex + i + 1,
+          programId: targetProgram.id,
+          passingPercentage: 70,
+          internalWeightage: 65,
+          attendanceWeightage: 5,
+          finalExamWeightage: 30,
+          totalSubjects: 5,
+          requiredInteractions: 25,
+        }));
+        const created = await semestersApi.createBulk(toCreate);
+        activeTargetSems = [...activeTargetSems, ...(created.data || created || [])];
+      }
+
+      // 2. Link the courses from M.Div to the target program's corresponding terms
+      for (let i = 0; i < Math.min(mDivSems.length, activeTargetSems.length); i++) {
+        const srcSem = mDivSems[i];
+        const destSem = activeTargetSems[i];
+        const srcCourseIds = srcSem.courseIds || [];
+        for (const cId of srcCourseIds) {
+          await semestersApi.linkCourse(destSem.id, cId, targetProgram.id);
+        }
+      }
+
+      toast.success('Successfully synced with Master Curriculum (30 courses across 6 rolling terms)!');
+      await fetchSemesters();
+      await fetchCourses();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to sync master curriculum.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openManageCourses = (semester) => {
     const currentCourseIds = semester.courseIds && semester.courseIds.length > 0
       ? semester.courseIds
@@ -315,7 +376,9 @@ const SemestersPage = () => {
                     </div>
                     <div>
                       <span style={{ color: 'var(--text-muted)', display: 'block' }}>Total Subjects</span>
-                      <strong style={{ color: 'var(--text-primary)' }}>{prog.totalSubjects || 30} Courses</strong>
+                      <strong style={{ color: 'var(--text-primary)' }}>
+                        {/upgrader|biblical studies/i.test(prog.name) ? '20 Courses (4 Terms)' : (prog.totalSubjects || 30) + ' Courses'}
+                      </strong>
                     </div>
                     <div>
                       <span style={{ color: 'var(--text-muted)', display: 'block' }}>Pass Mark</span>
@@ -342,17 +405,37 @@ const SemestersPage = () => {
       ) : (
         /* LEVEL 2: PROGRAM SEMESTERS & ASSIGNED COURSES */
         <div className="stack" style={{ gap: '1.25rem' }}>
-          <div style={{ padding: '1rem 1.25rem', background: 'var(--bg-surface-muted)', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>{activeProgram.name}</strong>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '2px' }}>
-                Total Semesters: {activeProgram.totalSemesters} | Total Subjects: {activeProgram.totalSubjects} | Pass Threshold: 70%
+          <div style={{ padding: '1.25rem', background: 'var(--bg-surface-card)', borderRadius: '10px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <strong style={{ color: 'var(--text-primary)', fontSize: '1.1rem' }}>{activeProgram.name}</strong>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
+                  {/upgrader|biblical studies/i.test(activeProgram.name) ? (
+                    <span><strong>Rolling Intake Model:</strong> Students join in the active semester and graduate upon completing <strong>any 4 semesters (20 courses)</strong> from the 6-term master cycle.</span>
+                  ) : (
+                    <span>Total Semesters: {activeProgram.totalSemesters || 6} | Total Subjects: {activeProgram.totalSubjects || 30} | Pass Threshold: 70%</span>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {/upgrader|biblical studies/i.test(activeProgram.name) && (
+                  <Button variant="outline" icon={Sparkles} onClick={() => syncMasterCurriculum(activeProgram)}>
+                    Sync with Master M.Div Cycle
+                  </Button>
+                )}
+                {currentProgramSemesters.length === 0 && (
+                  <Button icon={Sparkles} onClick={() => openGenerateModal(activeProgram)}>
+                    Auto-Generate Semesters
+                  </Button>
+                )}
               </div>
             </div>
-            {currentProgramSemesters.length === 0 && (
-              <Button icon={Sparkles} onClick={() => openGenerateModal(activeProgram)}>
-                Auto-Generate All {activeProgram.totalSemesters} Semesters
-              </Button>
+
+            {/upgrader|biblical studies/i.test(activeProgram.name) && (
+              <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', fontSize: '12px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle2 size={15} color="#2563eb" />
+                <span>All 6 rolling cycle terms share the same subjects with Master of Divinity. Students fulfill degree requirements after passing 20 courses (4 terms).</span>
+              </div>
             )}
           </div>
 
