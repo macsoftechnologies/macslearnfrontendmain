@@ -964,6 +964,7 @@ export default function CoursePlayer() {
         />
 
         <AIAssistantPanel
+          courseId={courseId}
           activeLesson={activeLesson}
           showAI={showAI}
           isThinking={isThinking}
@@ -972,6 +973,7 @@ export default function CoursePlayer() {
           aiData={aiData}
           onOpen={openAI}
           onClose={closeAI}
+          onRefreshAiData={openAI}
         />
       </div>
 

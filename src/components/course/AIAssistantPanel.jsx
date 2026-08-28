@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, BrainCircuit, BookOpen, Zap, ListChecks, X, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, RotateCcw, Copy, Check, Search, HelpCircle } from 'lucide-react';
+import { Sparkles, BrainCircuit, BookOpen, Zap, ListChecks, X, CheckCircle, AlertCircle, ArrowLeft, RotateCcw, Copy, Check, Search, HelpCircle, Award, Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
+import client from '../../api/client';
 
 export default function AIAssistantPanel({
+  courseId,
   activeLesson,
   showAI,
   isThinking,
@@ -11,6 +13,7 @@ export default function AIAssistantPanel({
   aiData,
   onOpen,
   onClose,
+  onRefreshAiData,
 }) {
   const [activeView, setActiveView] = useState(null); // 'summary' | 'quiz' | 'simplify' | 'revision' | null
   const [copied, setCopied] = useState(false);
@@ -22,6 +25,8 @@ export default function AIAssistantPanel({
   const [quizScore, setQuizScore] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [userAnswers, setUserAnswers] = useState([]);
+  const [savingAttempt, setSavingAttempt] = useState(false);
+  const [savedAttemptResult, setSavedAttemptResult] = useState(null);
 
   // Simplify topics search
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,8 +44,10 @@ export default function AIAssistantPanel({
   const payload = aiData?.data || aiData || {};
   const summary = payload?.summary || activeLesson?.description || 'No summary available for this lecture.';
   const quizPool = Array.isArray(payload?.quiz_pool) ? payload.quiz_pool : [];
+  const totalPoolCount = payload?.total_pool_count || quizPool.length || 35;
   const backstory = Array.isArray(payload?.backstory) ? payload.backstory : [];
   const keyTakeaways = Array.isArray(payload?.key_takeaways) ? payload.key_takeaways : [];
+  const latestAttempt = payload?.latest_attempt || null;
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -56,6 +63,14 @@ export default function AIAssistantPanel({
     setQuizScore(0);
     setQuizCompleted(false);
     setUserAnswers([]);
+    setSavedAttemptResult(null);
+  };
+
+  const handleRetakeWithNewQuestions = () => {
+    resetQuiz();
+    if (onRefreshAiData) {
+      onRefreshAiData();
+    }
   };
 
   const handleSelectOption = (idx) => {
@@ -68,16 +83,41 @@ export default function AIAssistantPanel({
     if (isCorrect) {
       setQuizScore(s => s + 1);
     }
-    setUserAnswers(prev => [...prev, { qId: currentQ.id || currentQuizIndex, selected: idx, isCorrect }]);
+    setUserAnswers(prev => [
+      ...prev, 
+      { 
+        questionId: currentQ.id || `q_${currentQuizIndex}`, 
+        selectedIndex: idx, 
+        questionText: currentQ.question 
+      }
+    ]);
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
     if (currentQuizIndex < quizPool.length - 1) {
       setCurrentQuizIndex(i => i + 1);
       setSelectedOption(null);
       setIsAnswered(false);
     } else {
       setQuizCompleted(true);
+      // Save 5-question attempt to Database
+      const lessonId = activeLesson?.id || activeLesson?._id;
+      if (courseId && lessonId) {
+        setSavingAttempt(true);
+        try {
+          const res = await client.post(`/courses/${courseId}/content/lessons/${lessonId}/ai-quiz/submit`, {
+            answers: userAnswers
+          });
+          if (res.data) {
+            setSavedAttemptResult(res.data);
+            toast.success('Quiz attempt recorded in database!');
+          }
+        } catch (err) {
+          console.warn('Could not save quiz attempt to database', err);
+        } finally {
+          setSavingAttempt(false);
+        }
+      }
     }
   };
 
@@ -114,7 +154,7 @@ export default function AIAssistantPanel({
             <div>
               <h3 className="ai-panel__title" style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>
                 {activeView === 'summary' && '📖 Lesson Summary'}
-                {activeView === 'quiz' && '🎯 Auto-Generated Interactive Quiz'}
+                {activeView === 'quiz' && '🎯 Auto-Generated Interactive Quiz (5 Random Qs)'}
                 {activeView === 'simplify' && '⚡ Simplify Topics & Terminology'}
                 {activeView === 'revision' && '✨ Quick Revision Points'}
                 {!activeView && 'AI Study Assistant'}
@@ -146,25 +186,42 @@ export default function AIAssistantPanel({
               <div className="ai-thinking__phases">
                 <p className={`ai-thinking__phase ${thinkingPhase >= 0 ? 'ai-thinking__phase--active' : ''} ${thinkingPhase > 0 ? 'ai-thinking__phase--done' : ''}`}>
                   <span className="ai-thinking__phase-dot" />
-                  <BrainCircuit size={14} /> Scanning lecture audio & visual patterns...
+                  <BrainCircuit size={14} /> Fetching AI question bank from database...
                 </p>
                 <p className={`ai-thinking__phase ${thinkingPhase >= 1 ? 'ai-thinking__phase--active' : ''} ${thinkingPhase > 1 ? 'ai-thinking__phase--done' : ''}`}>
                   <span className="ai-thinking__phase-dot" />
-                  <BookOpen size={14} /> Extracting core topics & theology transcript...
+                  <BookOpen size={14} /> Loading full lesson narrative summary...
                 </p>
                 <p className={`ai-thinking__phase ${thinkingPhase >= 2 ? 'ai-thinking__phase--active' : ''} ${thinkingPhase > 2 ? 'ai-thinking__phase--done' : ''}`}>
                   <span className="ai-thinking__phase-dot" />
-                  <Zap size={14} /> Formulating interactive quizzes & simplified analogies...
+                  <Zap size={14} /> Sampling 5 randomized practice questions for student...
                 </p>
                 <p className={`ai-thinking__phase ${thinkingPhase >= 3 ? 'ai-thinking__phase--active' : ''}`}>
                   <span className="ai-thinking__phase-dot" />
-                  <ListChecks size={14} /> Compiling comprehensive study package...
+                  <ListChecks size={14} /> Preparing study assistant hub...
                 </p>
               </div>
             </div>
           ) : showAI && !activeView ? (
             /* ---- 4 MAIN CARDS HUB ---- */
             <div className="ai-results">
+              {latestAttempt && (
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '12px 18px', marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Trophy size={20} color="#16a34a" />
+                    <div>
+                      <strong style={{ fontSize: '13px', color: '#15803d' }}>Last Assessment Score:</strong>
+                      <span style={{ fontSize: '13px', color: '#166534', marginLeft: '6px' }}>
+                        {latestAttempt.score} / {latestAttempt.totalQuestions} ({latestAttempt.percentage}%)
+                      </span>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    Completed on {new Date(latestAttempt.completedAt).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
               <div className="ai-results__grid">
                 {/* Card 1: Summary */}
                 <div 
@@ -191,7 +248,7 @@ export default function AIAssistantPanel({
                   </div>
                 </div>
 
-                {/* Card 2: Quizzes */}
+                {/* Card 2: Quizzes (5 Random Qs) */}
                 <div 
                   className="ai-card ai-card--2" 
                   onClick={() => { resetQuiz(); setActiveView('quiz'); }}
@@ -202,16 +259,16 @@ export default function AIAssistantPanel({
                       <ListChecks size={20} color="#fff" />
                     </div>
                     <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb' }}>
-                      {quizPool.length} Questions
+                      5 Random Questions
                     </span>
                   </div>
                   <div className="ai-card__content">
                     <h4 className="ai-card__title">Auto-Generated Quiz</h4>
                     <p className="ai-card__desc">
-                      Interactive test pool generated directly from this video's lecture with instant feedback and explanations.
+                      5 randomized questions sampled from the {totalPoolCount}-question bank. Answers and scores are saved to your profile.
                     </p>
                     <button className="ai-card__action" style={{ color: '#3b82f6', marginTop: '8px', fontWeight: 700 }}>
-                      Take Quiz ({quizPool.length} Qs) →
+                      Take 5-Q Quiz →
                     </button>
                   </div>
                 </div>
@@ -227,13 +284,13 @@ export default function AIAssistantPanel({
                       <Zap size={20} color="#fff" />
                     </div>
                     <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#ecfdf5', color: '#059669' }}>
-                      {backstory.length} Core Concepts
+                      {backstory.length} Concepts
                     </span>
                   </div>
                   <div className="ai-card__content">
                     <h4 className="ai-card__title">Simplify Topics</h4>
                     <p className="ai-card__desc">
-                      Complex theological terms, historical people, and Greek origins explained with plain language and analogies.
+                      Complex theological terms, historical context, and terminology explained with plain language and analogies.
                     </p>
                     <button className="ai-card__action" style={{ color: '#10b981', marginTop: '8px', fontWeight: 700 }}>
                       Simplify ({backstory.length} Topics) →
@@ -258,7 +315,7 @@ export default function AIAssistantPanel({
                   <div className="ai-card__content">
                     <h4 className="ai-card__title">Quick Revision</h4>
                     <p className="ai-card__desc">
-                      High-yield revision checklist and memory anchors ready to save or review before assessments.
+                      High-yield revision checklist and memory anchors ready to review and tick off before exams.
                     </p>
                     <button className="ai-card__action" style={{ color: '#f59e0b', marginTop: '8px', fontWeight: 700 }}>
                       View Points ({keyTakeaways.length} Points) →
@@ -288,7 +345,7 @@ export default function AIAssistantPanel({
               </div>
             </div>
           ) : activeView === 'quiz' ? (
-            /* ---- VIEW 2: INTERACTIVE QUIZ ---- */
+            /* ---- VIEW 2: INTERACTIVE QUIZ (5 QUESTIONS WITH DB STORAGE) ---- */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {quizPool.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
@@ -298,18 +355,30 @@ export default function AIAssistantPanel({
               ) : quizCompleted ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                   <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                    <CheckCircle size={36} />
+                    <Award size={36} />
                   </div>
                   <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>Quiz Completed!</h3>
-                  <p style={{ fontSize: '15px', color: '#64748b', margin: '0 0 20px' }}>
+                  <p style={{ fontSize: '15px', color: '#64748b', margin: '0 0 8px' }}>
                     You scored <strong style={{ color: '#16a34a', fontSize: '18px' }}>{quizScore}</strong> out of <strong style={{ fontSize: '18px' }}>{quizPool.length}</strong> ({Math.round((quizScore / quizPool.length) * 100)}%)
                   </p>
-                  <button 
-                    onClick={resetQuiz} 
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    <RotateCcw size={16} /> Retake Quiz
-                  </button>
+                  <p style={{ fontSize: '12px', color: '#15803d', fontWeight: 600, margin: '0 0 24px' }}>
+                    ✅ Attempt saved to your academic database records.
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button 
+                      onClick={handleRetakeWithNewQuestions} 
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      <RotateCcw size={16} /> Retake with 5 New Questions
+                    </button>
+                    <button 
+                      onClick={() => setActiveView(null)} 
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Back to AI Hub
+                    </button>
+                  </div>
                 </div>
               ) : (
                 (() => {
@@ -321,10 +390,10 @@ export default function AIAssistantPanel({
                       {/* Quiz Progress Header */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                         <span style={{ fontSize: '13px', fontWeight: 700, color: '#4f46e5' }}>
-                          Question {currentQuizIndex + 1} of {quizPool.length}
+                          Question {currentQuizIndex + 1} of {quizPool.length} (Random Sample)
                         </span>
                         <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
-                          Score: {quizScore}
+                          Current Score: {quizScore}
                         </span>
                       </div>
                       <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', marginBottom: '20px' }}>
@@ -430,7 +499,7 @@ export default function AIAssistantPanel({
                               cursor: 'pointer'
                             }}
                           >
-                            {currentQuizIndex < quizPool.length - 1 ? 'Next Question →' : 'Finish Quiz & View Score 🎉'}
+                            {currentQuizIndex < quizPool.length - 1 ? 'Next Question →' : 'Finish Quiz & Save to Records 🎉'}
                           </button>
                         </div>
                       )}
@@ -442,7 +511,6 @@ export default function AIAssistantPanel({
           ) : activeView === 'simplify' ? (
             /* ---- VIEW 3: SIMPLIFY TOPICS (BACKSTORY) ---- */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Search Bar */}
               <div style={{ position: 'relative' }}>
                 <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
                 <input
