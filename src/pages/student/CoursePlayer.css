@@ -594,3 +594,119 @@
   .ai-results__grid { grid-template-columns: 1fr; }
   .ai-thinking__shimmer-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   One Touch Floating Action Button (Illuminated Sacred Study Assistant)
+   ========================================================================== */
+.ai-fab-onetouch {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px 10px 14px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 70%, #d97706 100%);
+  border: 1.5px solid rgba(251, 191, 36, 0.7);
+  color: #fff;
+  cursor: pointer;
+  z-index: 120;
+  box-shadow: 0 8px 30px rgba(49, 46, 129, 0.5), 0 0 20px rgba(245, 158, 11, 0.35);
+  animation: onetouch-float 3s ease-in-out infinite, onetouch-glow 2.5s ease-in-out infinite alternate;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.ai-fab-onetouch:hover {
+  transform: translateY(-4px) scale(1.05);
+  border-color: #fbbf24;
+  box-shadow: 0 12px 36px rgba(49, 46, 129, 0.65), 0 0 28px rgba(245, 158, 11, 0.55);
+}
+
+.ai-fab-onetouch__halo {
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.4), rgba(129, 140, 248, 0.4));
+  z-index: -1;
+  opacity: 0.7;
+  filter: blur(4px);
+  animation: onetouch-halo-pulse 2.5s infinite;
+}
+
+.ai-fab-onetouch__icon-wrap {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f59e0b 0%, #b45309 60%, #1e1b4b 100%);
+  border: 1.5px solid #fef08a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+}
+
+.ai-fab-onetouch__book {
+  color: #fff;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.ai-fab-onetouch__sparkle {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  color: #fef08a;
+  filter: drop-shadow(0 0 4px #fbbf24);
+  animation: onetouch-sparkle-spin 4s linear infinite;
+}
+
+.ai-fab-onetouch__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.ai-fab-onetouch__title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.ai-fab-onetouch__sub {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #fef08a;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+@keyframes onetouch-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes onetouch-glow {
+  0% { box-shadow: 0 8px 30px rgba(49, 46, 129, 0.5), 0 0 18px rgba(245, 158, 11, 0.3); }
+  100% { box-shadow: 0 10px 34px rgba(49, 46, 129, 0.7), 0 0 28px rgba(245, 158, 11, 0.55); }
+}
+
+@keyframes onetouch-sparkle-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes onetouch-halo-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.04); }
+}

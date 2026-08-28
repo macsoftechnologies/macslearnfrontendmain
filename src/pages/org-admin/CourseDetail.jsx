@@ -985,7 +985,7 @@ function ExamsTab({ courseId, base, canManageContent }) {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [addExam, setAddExam] = useState({ title: '', durationMinutes: 60, totalMarks: 100, passingPercentage: 40, maxAttempts: 3, isFinalExam: false });
+  const [addExam, setAddExam] = useState({ title: '', durationMinutes: 60, totalMarks: 100, passingPercentage: 70, maxAttempts: 1, isFinalExam: false });
   const [saving, setSaving] = useState(false);
   const [rejectModalTarget, setRejectModalTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -1005,7 +1005,7 @@ function ExamsTab({ courseId, base, canManageContent }) {
         durationMinutes: Number(addExam.durationMinutes),
         totalMarks: Number(addExam.totalMarks),
         passingPercentage: Number(addExam.passingPercentage),
-        maxAttempts: Number(addExam.maxAttempts),
+        maxAttempts: 1,
         isFinalExam: addExam.isFinalExam,
       });
       toast.success('Exam created');
@@ -1084,7 +1084,11 @@ function ExamsTab({ courseId, base, canManageContent }) {
           </div>
           <div className="form-grid">
             <Field label="Passing Percentage (%)"><Input type="number" min="1" max="100" value={addExam.passingPercentage} onChange={(e) => setAddExam((f) => ({ ...f, passingPercentage: e.target.value }))} /></Field>
-            <Field label="Max Attempts"><Input type="number" min="1" max="3" value={addExam.maxAttempts} onChange={(e) => setAddExam((f) => ({ ...f, maxAttempts: e.target.value }))} /></Field>
+            <Field label="Exam Attempt Policy">
+              <div style={{ padding: '8px 12px', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '8px', fontSize: '13px', color: '#4338ca', fontWeight: 700, display: 'flex', alignItems: 'center', minHeight: '38px' }}>
+                🔒 1 Attempt / Semester Cycle
+              </div>
+            </Field>
           </div>
           <div className="row" style={{ alignItems: 'center', gap: '8px', padding: '12px', background: 'var(--color-primary-50)', borderRadius: '8px', border: '1px solid var(--color-primary-100)' }}>
             <input 

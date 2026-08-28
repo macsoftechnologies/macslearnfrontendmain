@@ -19,7 +19,6 @@ import VideoQuizOverlay from '../../components/course/VideoQuizOverlay';
 import QuizResults from '../../components/course/QuizResults';
 import AIAssistantPanel, { AIFab } from '../../components/course/AIAssistantPanel';
 import AttachmentPreviewModal from '../../components/course/AttachmentPreviewModal';
-import TranscriptViewer from '../../components/course/TranscriptViewer';
 import ReactPlayer from 'react-player';
 const Player = ReactPlayer.default ? ReactPlayer.default : ReactPlayer;
 import { DocumentViewer } from '../org-admin/LessonPreview';
@@ -809,19 +808,7 @@ export default function CoursePlayer() {
                     );
                   })()}
 
-                  {/* Video Transcript & Timestamps */}
-                  {activeLesson?.videoUrl && (
-                    <TranscriptViewer
-                      videoUrl={activeLesson.videoUrl}
-                      onSeek={(seconds) => {
-                        if (playerRef.current) {
-                          playerRef.current.seekTo(seconds, 'seconds');
-                          setPlaying(true);
-                        }
-                      }}
-                      currentSeconds={lastPlayedSecondsRef.current || 0}
-                    />
-                  )}
+
 
                   {/* Description */}
                   {activeLesson.description && (

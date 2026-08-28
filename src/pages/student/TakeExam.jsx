@@ -7,6 +7,8 @@ import Button from '../../components/ui/Button';
 import PageLoader from '../../components/ui/PageLoader';
 import { Card } from '../../components/ui/Card';
 import Input, { Textarea } from '../../components/ui/Input';
+import FileUploader from '../../components/ui/FileUploader';
+import { Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 export default function TakeExam() {
@@ -84,9 +86,17 @@ export default function TakeExam() {
     try {
       // 1. save answers
       const answersList = Object.entries(answers).map(([questionId, value]) => {
-        const q = questions.find(q => q._id === questionId || q.id === questionId);
+        const q = questions.find(q => (q._id || q.id) === questionId);
+        if (q?.type === 'BOOK_REVIEW' || q?.type === 'RESEARCH_PAPER') {
+          return {
+            questionId,
+            fileUrl: typeof value === 'object' ? value.fileUrl : (typeof value === 'string' && value.startsWith('http') ? value : ''),
+            fileName: typeof value === 'object' ? value.fileName : 'Submitted Document',
+            textAnswer: typeof value === 'object' ? value.textAnswer : (typeof value === 'string' && !value.startsWith('http') ? value : ''),
+          };
+        }
         if (q?.type === 'SHORT_ANSWER') {
-          return { questionId, textAnswer: value };
+          return { questionId, textAnswer: typeof value === 'object' ? value.textAnswer : value };
         }
         return { questionId, selectedOption: value };
       });
@@ -141,60 +151,123 @@ export default function TakeExam() {
                 </div>
               </div>
               
-              {questions[currentIndex].type === 'MCQ' ? (
+                            {questions[currentIndex].type === 'MCQ' ? (
                 <div className="stack" style={{ gap: '14px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#4338ca', background: '#e0e7ff', padding: '4px 10px', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
+                    MULTIPLE CHOICE QUESTION (Select 1 Option)
+                  </div>
                   {(questions[currentIndex].options || []).map((opt) => {
                     const qId = questions[currentIndex]._id || questions[currentIndex].id;
                     const optId = opt._id || opt.text;
                     const isSelected = answers[qId] === optId;
                     
                     return (
-                      <label key={optId} className="row" style={{ alignItems: 'center', gap: '14px', cursor: 'pointer', padding: '14px 18px', borderRadius: 'var(--radius-md)', border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border-subtle)', background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.02)', color: isSelected ? 'var(--brand, #4f46e5)' : 'var(--text-primary)', transition: 'all var(--transition-fast)' }}>
+                      <label key={optId} className="row" style={{ alignItems: 'center', gap: '14px', cursor: 'pointer', padding: '14px 18px', borderRadius: 'var(--radius-md)', border: isSelected ? '2px solid #4f46e5' : '1px solid var(--border-subtle)', background: isSelected ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255, 255, 255, 0.02)', color: isSelected ? '#4338ca' : 'var(--text-primary)', transition: 'all var(--transition-fast)' }}>
                         <input 
                           type="radio" 
                           name={qId} 
                           checked={isSelected}
                           onChange={() => handleSelectOption(qId, optId)}
-                          style={{ width: '18px', height: '18px', accentColor: 'var(--accent)' }}
+                          style={{ width: '18px', height: '18px', accentColor: '#4f46e5' }}
                         />
-                        <span>{opt.text}</span>
+                        <span style={{ fontWeight: isSelected ? 600 : 400 }}>{opt.text}</span>
                       </label>
                     );
                   })}
                 </div>
               ) : questions[currentIndex].type === 'TRUE_FALSE' ? (
                 <div className="stack" style={{ gap: '14px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#0284c7', background: '#e0f2fe', padding: '4px 10px', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
+                    TRUE OR FALSE (Select True or False)
+                  </div>
                   {['True', 'False'].map((optText) => {
                     const qId = questions[currentIndex]._id || questions[currentIndex].id;
                     const optId = optText.toLowerCase();
                     const isSelected = answers[qId] === optId;
                     
                     return (
-                      <label key={optId} className="row" style={{ alignItems: 'center', gap: '14px', cursor: 'pointer', padding: '14px 18px', borderRadius: 'var(--radius-md)', border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border-subtle)', background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.02)', color: isSelected ? 'var(--brand, #4f46e5)' : 'var(--text-primary)', transition: 'all var(--transition-fast)' }}>
+                      <label key={optId} className="row" style={{ alignItems: 'center', gap: '14px', cursor: 'pointer', padding: '14px 18px', borderRadius: 'var(--radius-md)', border: isSelected ? '2px solid #0284c7' : '1px solid var(--border-subtle)', background: isSelected ? 'rgba(2, 132, 199, 0.08)' : 'rgba(255, 255, 255, 0.02)', color: isSelected ? '#0369a1' : 'var(--text-primary)', transition: 'all var(--transition-fast)' }}>
                         <input 
                           type="radio" 
                           name={qId} 
                           checked={isSelected}
                           onChange={() => handleSelectOption(qId, optId)}
-                          style={{ width: '18px', height: '18px', accentColor: 'var(--accent)' }}
+                          style={{ width: '18px', height: '18px', accentColor: '#0284c7' }}
                         />
-                        <span>{optText}</span>
+                        <span style={{ fontWeight: isSelected ? 600 : 400 }}>{optText}</span>
                       </label>
                     );
                   })}
                 </div>
+              ) : (questions[currentIndex].type === 'BOOK_REVIEW' || questions[currentIndex].type === 'RESEARCH_PAPER') ? (
+                <div className="stack" style={{ gap: '16px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#b45309', background: '#fef3c7', padding: '4px 10px', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
+                    {questions[currentIndex].type === 'BOOK_REVIEW' ? '📖 BOOK REVIEW SUBMISSION (Upload File & Summary)' : '📄 RESEARCH PAPER SUBMISSION (Upload File & Abstract)'}
+                  </div>
+                  
+                  {questions[currentIndex].attachmentUrl && (
+                    <div style={{ padding: '10px 14px', background: 'var(--bg-surface-muted)', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FileText size={18} color="#4f46e5" />
+                      <span style={{ fontSize: '13px' }}>Reference Material / Guidelines: </span>
+                      <a href={questions[currentIndex].attachmentUrl} target="_blank" rel="noreferrer" style={{ color: '#4f46e5', fontWeight: 600, fontSize: '13px' }}>Download File</a>
+                    </div>
+                  )}
+
+                  <div className="stack" style={{ gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Upload Paper / Document (PDF, DOCX, DOC, JPG, PNG)</label>
+                    <FileUploader 
+                      accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
+                      value={answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl || (typeof answers[questions[currentIndex]._id || questions[currentIndex].id] === 'string' ? answers[questions[currentIndex]._id || questions[currentIndex].id] : '')}
+                      onChange={(url, name) => {
+                        const qId = questions[currentIndex]._id || questions[currentIndex].id;
+                        setAnswers(prev => ({
+                          ...prev,
+                          [qId]: {
+                            ...(typeof prev[qId] === 'object' ? prev[qId] : {}),
+                            fileUrl: url,
+                            fileName: name || 'Uploaded Document'
+                          }
+                        }));
+                      }}
+                    />
+                  </div>
+
+                  <div className="stack" style={{ gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Written Summary / Abstract / Comments (Optional)</label>
+                    <Textarea 
+                      rows={4}
+                      placeholder="Enter abstract, commentary, or review notes here..."
+                      value={answers[questions[currentIndex]._id || questions[currentIndex].id]?.textAnswer || (typeof answers[questions[currentIndex]._id || questions[currentIndex].id] === 'string' ? answers[questions[currentIndex]._id || questions[currentIndex].id] : '')}
+                      onChange={(e) => {
+                        const qId = questions[currentIndex]._id || questions[currentIndex].id;
+                        setAnswers(prev => ({
+                          ...prev,
+                          [qId]: {
+                            ...(typeof prev[qId] === 'object' ? prev[qId] : {}),
+                            textAnswer: e.target.value
+                          }
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
               ) : (
-                <Textarea 
-                  rows={4}
-                  placeholder="Type your answer here..."
-                  value={answers[questions[currentIndex]._id || questions[currentIndex].id] || ''}
-                  onChange={(e) => handleTextAnswer(questions[currentIndex]._id || questions[currentIndex].id, e.target.value)}
-                />
+                <div className="stack" style={{ gap: '12px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', background: '#f1f5f9', padding: '4px 10px', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
+                    WRITTEN ANSWER
+                  </div>
+                  <Textarea 
+                    rows={4}
+                    placeholder="Type your answer here..."
+                    value={answers[questions[currentIndex]._id || questions[currentIndex].id] || ''}
+                    onChange={(e) => handleTextAnswer(questions[currentIndex]._id || questions[currentIndex].id, e.target.value)}
+                  />
+                </div>
               )}
             </Card>
           )}
         </div>
-        
+
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 'var(--sp-8)' }}>
           <Button 
             variant="outline" 

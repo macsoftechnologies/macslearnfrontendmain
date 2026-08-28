@@ -137,8 +137,20 @@ export function AIFab({ activeTab, activeLesson, showAI, isThinking, onOpen }) {
   if (activeTab !== 'lessons' || !activeLesson || showAI || isThinking) return null;
 
   return (
-    <button onClick={onOpen} title="Ask AI Assistant" className="ai-fab">
-      <Sparkles size={22} />
+    <button 
+      onClick={onOpen} 
+      title="One Touch — Instant Divine Study Insights & Summary" 
+      className="ai-fab-onetouch"
+    >
+      <div className="ai-fab-onetouch__halo" />
+      <div className="ai-fab-onetouch__icon-wrap">
+        <BookOpen size={20} className="ai-fab-onetouch__book" />
+        <Sparkles size={13} className="ai-fab-onetouch__sparkle" />
+      </div>
+      <div className="ai-fab-onetouch__content">
+        <span className="ai-fab-onetouch__title">One Touch</span>
+        <span className="ai-fab-onetouch__sub">AI Insights</span>
+      </div>
     </button>
   );
 }

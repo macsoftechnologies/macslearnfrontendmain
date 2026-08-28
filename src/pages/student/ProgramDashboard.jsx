@@ -9,7 +9,7 @@ import client, { buildStaticUrl } from '../../api/client';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import PageLoader from '../../components/ui/PageLoader';
-import { GraduationCap, Lock, Unlock, PlayCircle } from 'lucide-react';
+import { GraduationCap, Lock, Unlock, PlayCircle, Video, Users, CheckCircle2, Calendar } from 'lucide-react';
 import './CourseGrid.css';
 
 export default function ProgramDashboard() {
@@ -24,6 +24,7 @@ export default function ProgramDashboard() {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(null);
+  const [orgZoomUrl, setOrgZoomUrl] = useState('');
 
   useEffect(() => {
     const userId = user?.id || user?._id;
@@ -33,8 +34,12 @@ export default function ProgramDashboard() {
       programsApi.getById(id),
       coursesApi.list({ programId: id }),
       semestersApi.list({ programId: id }),
-      studentsApi.getEnrollments(userId)
-    ]).then(([progRes, courseRes, semRes, enrollRes]) => {
+      studentsApi.getEnrollments(userId),
+      client.get('/organizations/me').catch(() => null)
+    ]).then(([progRes, courseRes, semRes, enrollRes, orgRes]) => {
+      if (orgRes?.data?.data?.zoomConfig?.defaultMeetingUrl || orgRes?.data?.zoomConfig?.defaultMeetingUrl) {
+        setOrgZoomUrl(orgRes.data?.data?.zoomConfig?.defaultMeetingUrl || orgRes.data?.zoomConfig?.defaultMeetingUrl);
+      }
       setProgram(progRes.data || progRes);
       
       const cArr = courseRes?.data?.data || courseRes?.data || courseRes;
@@ -45,6 +50,12 @@ export default function ProgramDashboard() {
 
       const eArr = enrollRes?.data?.data || enrollRes?.data || enrollRes;
       setEnrollments(Array.isArray(eArr) ? eArr : []);
+      if (arguments[0] && arguments[0][4]) {
+        const orgData = arguments[0][4]?.data?.data || arguments[0][4]?.data;
+        if (orgData?.zoomConfig?.defaultMeetingUrl) {
+          setOrgZoomUrl(orgData.zoomConfig.defaultMeetingUrl);
+        }
+      }
       
       setLoading(false);
     }).catch(() => {
@@ -110,6 +121,36 @@ export default function ProgramDashboard() {
           )}
         </div>
         <GraduationCap size={48} color="var(--brand)" />
+      </div>
+
+      
+      {/* LIVE VIDEO SESSIONS & ATTENDANCE BANNER */}
+      <div style={{ background: '#f8faff', border: '1.5px solid #c7d2fe', borderRadius: 'var(--radius-lg)', padding: 'var(--sp-6)', marginBottom: 'var(--sp-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ width: 50, height: 50, borderRadius: '12px', background: '#4338ca', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Video size={28} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e1b4b' }}>Live Interactive Sessions & Attendance</h3>
+              <span style={{ padding: '2px 8px', background: '#dcfce7', color: '#15803d', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>25 Sessions Required</span>
+            </div>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+              Attend scheduled webinars, group interactions, and faculty reviews to fulfill mandatory attendance requirements.
+            </p>
+          </div>
+        </div>
+        {orgZoomUrl ? (
+          <a href={orgZoomUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+            <Button size="md" variant="primary" icon={Video} style={{ background: '#2563eb', borderColor: '#1d4ed8' }}>
+              Join Live Classroom
+            </Button>
+          </a>
+        ) : (
+          <div style={{ fontSize: '13px', color: '#64748b', background: '#fff', padding: '8px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            Live link will activate during class hours
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: '2rem', marginBottom: 'var(--sp-8)', alignItems: 'flex-start' }}>

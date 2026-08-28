@@ -69,7 +69,9 @@ export default function BrowsePrograms() {
                 <h3>{p.name}</h3>
                 <div className="course-card__meta">
                   <span>{p.totalSubjects} Subjects</span>
-                  {p.totalSemesters > 0 && <span>{p.totalSemesters} Semesters</span>}
+                  <span>
+                    {p.maxDurationYears ? `${p.maxDurationYears} Years` : (p.totalSemesters ? `${Math.ceil(p.totalSemesters / 2)} Years` : '3 Years')}
+                  </span>
                 </div>
                 <div style={{ marginTop: 'var(--sp-3)' }}>
                   {enrolledProgramIds.includes(p.id) ? (
