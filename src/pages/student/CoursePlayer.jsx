@@ -327,6 +327,7 @@ export default function CoursePlayer() {
   const [showAI, setShowAI] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingPhase, setThinkingPhase] = useState(0);
+  const [aiData, setAiData] = useState(null);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   // Refs
@@ -633,14 +634,31 @@ export default function CoursePlayer() {
 
   // --- AI assistant handler ---
 
-  const openAI = () => {
+  const openAI = async () => {
     setAiPanelOpen(true);
     setIsThinking(true);
     setThinkingPhase(0);
-    setTimeout(() => setThinkingPhase(1), 1800);
-    setTimeout(() => setThinkingPhase(2), 3600);
-    setTimeout(() => setThinkingPhase(3), 5400);
-    setTimeout(() => { setIsThinking(false); setShowAI(true); }, 7000);
+    setAiData(null);
+
+    const t1 = setTimeout(() => setThinkingPhase(1), 800);
+    const t2 = setTimeout(() => setThinkingPhase(2), 1600);
+    const t3 = setTimeout(() => setThinkingPhase(3), 2400);
+
+    try {
+      if (courseId && activeLesson?.id) {
+        const res = await client.get(`/courses/${courseId}/content/lessons/${activeLesson.id}/ai-data`);
+        if (res.data?.data) {
+          setAiData(res.data.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load AI data for lesson', err);
+    } finally {
+      setTimeout(() => {
+        setIsThinking(false);
+        setShowAI(true);
+      }, 3000);
+    }
   };
 
   const closeAI = () => {
@@ -949,6 +967,7 @@ export default function CoursePlayer() {
           isThinking={isThinking}
           thinkingPhase={thinkingPhase}
           aiPanelOpen={aiPanelOpen}
+          aiData={aiData}
           onOpen={openAI}
           onClose={closeAI}
         />

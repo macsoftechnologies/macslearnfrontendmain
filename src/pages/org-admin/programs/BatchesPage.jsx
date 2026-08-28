@@ -241,16 +241,22 @@ const BatchesPage = () => {
                   const p = programs.find(item => (item.id || item._id) === pId);
                   const dur = p?.maxDurationYears || (p?.totalSemesters ? Math.ceil(p.totalSemesters / 2) : 3);
                   
+                  let start = formData.startDate;
+                  if (!start) {
+                    const now = new Date();
+                    start = `${now.getFullYear()}-${now.getMonth() < 6 ? '04-01' : '09-01'}`;
+                  }
+
                   let newEnd = formData.endDate;
-                  if (formData.startDate && dur) {
-                    const s = new Date(formData.startDate);
+                  if (start && dur) {
+                    const s = new Date(start);
                     if (!isNaN(s.getTime())) {
                       s.setFullYear(s.getFullYear() + dur);
                       s.setDate(s.getDate() - 1);
                       newEnd = s.toISOString().substring(0, 10);
                     }
                   }
-                  setFormData({...formData, programId: pId, endDate: newEnd });
+                  setFormData({ ...formData, programId: pId, startDate: start, endDate: newEnd });
                 }}
               >
                 <option value="">-- Select Program --</option>
@@ -261,7 +267,25 @@ const BatchesPage = () => {
 
           <div className="row" style={{ gap: '1rem' }}>
             <Field label="Start Date" style={{ flex: 1 }}>
-              <Input type="date" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
+              <Input 
+                type="date" 
+                value={formData.startDate} 
+                onChange={e => {
+                  const newStart = e.target.value;
+                  const p = programs.find(item => (item.id || item._id) === formData.programId);
+                  const dur = p?.maxDurationYears || (p?.totalSemesters ? Math.ceil(p.totalSemesters / 2) : 3);
+                  let newEnd = formData.endDate;
+                  if (newStart && dur) {
+                    const s = new Date(newStart);
+                    if (!isNaN(s.getTime())) {
+                      s.setFullYear(s.getFullYear() + dur);
+                      s.setDate(s.getDate() - 1);
+                      newEnd = s.toISOString().substring(0, 10);
+                    }
+                  }
+                  setFormData({ ...formData, startDate: newStart, endDate: newEnd });
+                }} 
+              />
             </Field>
             <Field label="End Date" style={{ flex: 1 }}>
               <Input type="date" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
