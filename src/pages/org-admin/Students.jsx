@@ -429,15 +429,24 @@ export default function Students() {
                 value={approvalForm.batchId} 
                 onChange={(e) => setApprovalForm(f => ({ ...f, batchId: e.target.value }))}
               >
-                <option value="">{approvalForm.autoBatchName || 'Apr - Aug 2026 Batch (Auto)'}</option>
                 {(() => {
                   const prog = programs.find(p => (p.id || p._id) === approvalForm.programId);
-                  const { configuredOptions } = computeBatchOptionsForProgram(prog);
-                  return configuredOptions.map((opt, idx) => (
-                    <option key={`cfg-${idx}`} value={`auto:${opt}`}>{opt} (From Cohort Rules)</option>
-                  ));
+                  const { primaryAutoBatch, configuredOptions } = computeBatchOptionsForProgram(prog);
+                  const primaryClean = (approvalForm.autoBatchName || primaryAutoBatch || '').replace(' (Auto)', '').trim();
+                  const otherConfigured = configuredOptions.filter(opt => opt.trim() !== primaryClean);
+
+                  return (
+                    <>
+                      <option value="">{approvalForm.autoBatchName || primaryAutoBatch || 'Apr - Aug 2026 Batch (Auto)'}</option>
+                      {otherConfigured.map((opt, idx) => (
+                        <option key={`cfg-${idx}`} value={`auto:${opt}`}>{opt}</option>
+                      ))}
+                      {filteredBatches.filter(b => b.name !== primaryClean && !otherConfigured.includes(b.name)).map(b => (
+                        <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.batchCode}</option>
+                      ))}
+                    </>
+                  );
                 })()}
-                {filteredBatches.map(b => <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.batchCode}</option>)}
               </Select>
             </Field>
           </div>
