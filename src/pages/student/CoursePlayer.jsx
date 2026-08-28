@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle2, PlayCircle, ChevronRight, Loader2, Sparkles, X, Maximize, Minimize } from 'lucide-react';
+import { CheckCircle2, PlayCircle, ChevronRight, Loader2, Sparkles, X, Maximize, Minimize, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as contentApi from '../../api/content';
 import * as progressApi from '../../api/progress';

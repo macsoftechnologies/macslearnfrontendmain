@@ -136,7 +136,10 @@ export default function VimeoUploader({
       uploadRef.current = upload;
       upload.start();
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Failed to initialize upload';
+      let rawMsg = err.response?.data?.message || err.message || 'Failed to initialize upload';
+      if (Array.isArray(rawMsg)) rawMsg = rawMsg.join(', ');
+      else if (typeof rawMsg === 'object') rawMsg = rawMsg.message || JSON.stringify(rawMsg);
+      const msg = String(rawMsg);
       setError(msg);
       setUploading(false);
       onProgressUpdate?.({
@@ -251,8 +254,8 @@ export default function VimeoUploader({
         <div className="row" style={{ alignItems: 'flex-start', gap: 6, color: 'var(--danger)', fontSize: 'var(--fs-xs)', background: 'var(--color-rose-050, #fff1f2)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--color-rose-200, #fecdd3)' }}>
           <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 2 }} />
           <span>
-            {error}{' '}
-            {error.toLowerCase().includes('settings') && (
+            {typeof error === 'string' ? error : JSON.stringify(error)}{' '}
+            {typeof error === 'string' && error.toLowerCase().includes('settings') && (
               <a
                 href="/admin/settings"
                 target="_blank"
