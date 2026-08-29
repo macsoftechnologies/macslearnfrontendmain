@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Plus, ChevronDown, ChevronRight, Pencil, Trash2, FileText, Video, HelpCircle, Users, ClipboardList, FileCheck2, MessagesSquare, CheckCircle2, Award, Send, XCircle, BookOpen, LayoutDashboard, DollarSign, Info, Settings, Eye, Image, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronDown, ChevronRight, Pencil, Trash2, FileText, Video, HelpCircle, Users, ClipboardList, FileCheck2, MessagesSquare, CheckCircle2, Award, Send, XCircle, BookOpen, LayoutDashboard, DollarSign, Info, Settings, Eye, Image, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import * as coursesApi from '../../api/courses';
@@ -545,6 +545,9 @@ function ContentTab({ courseId, base, canManageContent }) {
   const [rejectModalTarget, setRejectModalTarget] = useState(null); // { type: 'module'|'lesson', id: string, moduleId?: string }
   const [rejectReason, setRejectReason] = useState('');
 
+  // Drag and Drop State
+  const [dragState, setDragState] = useState({ moduleId: null, fromIndex: null, overIndex: null });
+
   const loadModules = () => {
     setLoading(true);
     contentApi.listModules(courseId).then((res) => setModules(res.data?.data || [])).finally(() => setLoading(false));
@@ -663,6 +666,7 @@ function ContentTab({ courseId, base, canManageContent }) {
     }
   };
 
+  // 1-Click Arrow Reordering
   const handleMoveLesson = async (moduleId, lIdx, direction) => {
     const list = [...(lessonsByModule[moduleId] || [])];
     const targetIdx = lIdx + direction;
@@ -684,7 +688,63 @@ function ContentTab({ courseId, base, canManageContent }) {
       toast.success('Curriculum order updated');
     } catch (err) {
       extractErrorMessages(err).forEach((m) => toast.error(m));
-      loadModules();
+      const res = await contentApi.listLessons(courseId, moduleId).catch(() => null);
+      setLessonsByModule((prev) => ({ ...prev, [moduleId]: res?.data?.data || [] }));
+    }
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (e, moduleId, index) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ moduleId, index }));
+    e.dataTransfer.effectAllowed = 'move';
+    setDragState({ moduleId, fromIndex: index, overIndex: null });
+  };
+
+  const handleDragOver = (e, moduleId, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragState.moduleId === moduleId && dragState.overIndex !== index) {
+      setDragState((prev) => ({ ...prev, overIndex: index }));
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDragState({ moduleId: null, fromIndex: null, overIndex: null });
+  };
+
+  const handleDrop = async (e, targetModuleId, targetIndex) => {
+    e.preventDefault();
+    setDragState({ moduleId: null, fromIndex: null, overIndex: null });
+
+    let data;
+    try {
+      data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    } catch {
+      return;
+    }
+
+    if (!data || data.moduleId !== targetModuleId) return;
+    const { index: sourceIndex } = data;
+    if (sourceIndex === targetIndex || sourceIndex === undefined || targetIndex === undefined) return;
+
+    const list = [...(lessonsByModule[targetModuleId] || [])];
+    const [movedLesson] = list.splice(sourceIndex, 1);
+    list.splice(targetIndex, 0, movedLesson);
+
+    // Instant optimistic update
+    setLessonsByModule((prev) => ({ ...prev, [targetModuleId]: list }));
+
+    try {
+      const updatePromises = list.map((lesson, idx) => {
+        const lId = lesson._id || lesson.id;
+        return contentApi.updateLesson(courseId, targetModuleId, lId, { orderIndex: idx + 1 });
+      });
+      await Promise.all(updatePromises);
+      toast.success('Curriculum order updated');
+    } catch (err) {
+      extractErrorMessages(err).forEach((m) => toast.error(m));
+      const res = await contentApi.listLessons(courseId, targetModuleId).catch(() => null);
+      setLessonsByModule((prev) => ({ ...prev, [targetModuleId]: res?.data?.data || [] }));
     }
   };
 
@@ -692,103 +752,148 @@ function ContentTab({ courseId, base, canManageContent }) {
 
   return (
     <div className="stack">
-      <div className="row" style={{ justifyContent: 'flex-end' }}>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <p className="text-muted" style={{ fontSize: 'var(--fs-sm)', margin: 0 }}>
+          Drag lessons using the grip icon ⠿ or use the arrow buttons to reorder them within any module.
+        </p>
         <Button icon={Plus} size="sm" onClick={() => setModuleModal(true)}>Add Module</Button>
       </div>
 
       {modules.length === 0 ? (
         <EmptyState icon={FileText} title="No modules yet" description="Break your course into modules, then add lessons to each." />
       ) : (
-        modules.map((mod) => (
-          <Card key={mod._id || mod.id} style={{ padding: 0, overflow: 'hidden' }}>
-            <div
-              className="row"
-              style={{ width: '100%', justifyContent: 'space-between', padding: 'var(--sp-4) var(--sp-5)', background: 'var(--color-paper-50)', border: 'none', borderBottom: expanded[mod._id || mod.id] ? '1px solid var(--border-subtle)' : 'none', cursor: 'pointer' }}
-              onClick={() => toggleExpand(mod._id || mod.id)}
-            >
-              <span className="row" style={{ fontWeight: 600 }}>
-                {expanded[mod._id || mod.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                {mod.title}
-                {mod.contentStatus === 'IN_REVIEW' && (
-                  <span style={{ fontSize: '10px', padding: '2px 6px', background: 'var(--color-warning)', color: '#fff', borderRadius: '4px', marginLeft: 8 }}>IN REVIEW</span>
-                )}
-                {mod.reviewNotes && mod.contentStatus === 'IN_REVIEW' && (
-                  <span style={{ fontSize: '10px', color: 'var(--color-danger)', marginLeft: 8 }}>Rejected</span>
-                )}
-              </span>
-              <span className="row">
-                {canManageContent && mod.contentStatus === 'IN_REVIEW' && (
-                  <>
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setRejectModalTarget({ type: 'module', id: mod._id || mod.id }); }}>Reject</Button>
-                    <Button size="sm" variant="primary" onClick={(e) => handleApprove(e, 'module', mod._id || mod.id)}>Approve</Button>
-                  </>
-                )}
-                <Link to={`${base}/courses/${courseId}/modules/${mod._id || mod.id}/lessons/new`} style={{textDecoration: 'none'}}>
-                  <Button size="sm" variant="ghost" icon={Plus} onClick={(e) => { e.stopPropagation(); }}>Add Lesson</Button>
-                </Link>
-                <Button size="sm" variant="ghost" icon={Trash2} onClick={(e) => { e.stopPropagation(); setDeleteModuleTarget(mod); }} />
-              </span>
-            </div>
-            {expanded[mod._id || mod.id] && (
-              <div style={{ padding: 'var(--sp-2) var(--sp-5) var(--sp-4)' }}>
-                {(lessonsByModule[mod._id || mod.id] || []).length === 0 && (
-                  <p className="text-muted" style={{ fontSize: 'var(--fs-sm)', padding: 'var(--sp-3) 0' }}>No lessons in this module yet.</p>
-                )}
-                {(lessonsByModule[mod._id || mod.id] || []).map((lesson, lIdx) => (
-                  <div key={lesson._id || lesson.id} className="row" style={{ justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                    <span className="row" style={{ fontSize: 'var(--fs-sm)' }}>
-                      {(lesson.type === 'VIDEO' || lesson.videoUrl) ? <Video size={15} color="var(--info, #3b82f6)" /> : lesson.type === 'QUIZ' ? <HelpCircle size={15} /> : <FileText size={15} />}
-                      {lesson.title}
-                      <span className="text-muted" style={{ fontSize: 'var(--fs-2xs)' }}>{lesson.durationMinutes ? `${lesson.durationMinutes} min` : ''}</span>
-                      {lesson.contentStatus === 'IN_REVIEW' && (
-                        <span style={{ fontSize: '10px', padding: '2px 6px', background: 'var(--color-warning)', color: '#fff', borderRadius: '4px', marginLeft: 8 }}>IN REVIEW</span>
-                      )}
-                      {lesson.reviewNotes && lesson.contentStatus === 'IN_REVIEW' && (
-                        <span style={{ fontSize: '10px', color: 'var(--color-danger)', marginLeft: 8 }}>Rejected</span>
-                      )}
-                    </span>
-                    <span className="row" style={{ gap: '12px', alignItems: 'center' }}>
-                      <Link to={`${base}/courses/${courseId}/lessons/${lesson._id || lesson.id}/preview`} state={{ lesson }} style={{ fontSize: 'var(--fs-xs)', textDecoration: 'underline', color: 'var(--color-primary-600)' }}>
-                        Preview Lesson
-                      </Link>
-                      {lesson.videoUrl && (
-                        <Link to={`${base}/courses/${courseId}/lessons/${lesson._id || lesson.id}/video-quizzes`} state={{ lesson }} style={{ fontSize: 'var(--fs-xs)', textDecoration: 'underline', color: 'var(--color-primary-600)' }}>
-                          Manage Quizzes
-                        </Link>
-                      )}
-                      {canManageContent && lesson.contentStatus === 'IN_REVIEW' && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => setRejectModalTarget({ type: 'lesson', id: lesson._id || lesson.id, moduleId: mod._id || mod.id })}>Reject</Button>
-                          <Button size="sm" variant="primary" onClick={(e) => handleApprove(e, 'lesson', mod._id || mod.id, lesson._id || lesson.id)}>Approve</Button>
-                        </>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={ArrowUp}
-                        disabled={lIdx === 0}
-                        onClick={() => handleMoveLesson(mod._id || mod.id, lIdx, -1)}
-                        title="Move Lesson Up"
-                      />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={ArrowDown}
-                        disabled={lIdx === (lessonsByModule[mod._id || mod.id] || []).length - 1}
-                        onClick={() => handleMoveLesson(mod._id || mod.id, lIdx, 1)}
-                        title="Move Lesson Down"
-                      />
-                      <Link to={`${base}/courses/${courseId}/modules/${mod._id || mod.id}/lessons/${lesson._id || lesson.id}/edit`} style={{textDecoration: 'none'}}>
-                        <Button size="sm" variant="ghost" icon={Pencil} title="Edit Lesson" />
-                      </Link>
-                      <Button size="sm" variant="ghost" icon={Trash2} onClick={() => setDeleteLessonTarget({ ...lesson, moduleId: mod._id || mod.id })} title="Delete Lesson" />
-                    </span>
-                  </div>
-                ))}
+        modules.map((mod) => {
+          const mId = mod._id || mod.id;
+          const lessonsList = lessonsByModule[mId] || [];
+          return (
+            <Card key={mId} style={{ padding: 0, overflow: 'hidden' }}>
+              <div
+                className="row"
+                style={{ width: '100%', justifyContent: 'space-between', padding: 'var(--sp-4) var(--sp-5)', background: 'var(--color-paper-50)', border: 'none', borderBottom: expanded[mId] ? '1px solid var(--border-subtle)' : 'none', cursor: 'pointer' }}
+                onClick={() => toggleExpand(mId)}
+              >
+                <span className="row" style={{ fontWeight: 600, alignItems: 'center', gap: '8px' }}>
+                  {expanded[mId] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  {mod.title}
+                  <span className="text-muted" style={{ fontSize: 'var(--fs-xs)', fontWeight: 400 }}>
+                    ({lessonsList.length} lesson{lessonsList.length !== 1 ? 's' : ''})
+                  </span>
+                  {mod.contentStatus === 'IN_REVIEW' && (
+                    <span style={{ fontSize: '10px', padding: '2px 6px', background: 'var(--color-warning)', color: '#fff', borderRadius: '4px', marginLeft: 8 }}>IN REVIEW</span>
+                  )}
+                  {mod.reviewNotes && mod.contentStatus === 'IN_REVIEW' && (
+                    <span style={{ fontSize: '10px', color: 'var(--color-danger)', marginLeft: 8 }}>Rejected</span>
+                  )}
+                </span>
+                <span className="row">
+                  {canManageContent && mod.contentStatus === 'IN_REVIEW' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setRejectModalTarget({ type: 'module', id: mId }); }}>Reject</Button>
+                      <Button size="sm" variant="primary" onClick={(e) => handleApprove(e, 'module', mId)}>Approve</Button>
+                    </>
+                  )}
+                  <Link to={`${base}/courses/${courseId}/modules/${mId}/lessons/new`} style={{textDecoration: 'none'}}>
+                    <Button size="sm" variant="ghost" icon={Plus} onClick={(e) => { e.stopPropagation(); }}>Add Lesson</Button>
+                  </Link>
+                  <Button size="sm" variant="ghost" icon={Trash2} onClick={(e) => { e.stopPropagation(); setDeleteModuleTarget(mod); }} />
+                </span>
               </div>
-            )}
-          </Card>
-        ))
+              {expanded[mId] && (
+                <div style={{ padding: 'var(--sp-2) var(--sp-5) var(--sp-4)' }}>
+                  {lessonsList.length === 0 && (
+                    <p className="text-muted" style={{ fontSize: 'var(--fs-sm)', padding: 'var(--sp-3) 0' }}>No lessons in this module yet.</p>
+                  )}
+                  {lessonsList.map((lesson, lIdx) => {
+                    const isDraggingThis = dragState.moduleId === mId && dragState.fromIndex === lIdx;
+                    const isDragOverThis = dragState.moduleId === mId && dragState.overIndex === lIdx;
+
+                    return (
+                      <div
+                        key={lesson._id || lesson.id}
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, mId, lIdx)}
+                        onDragOver={(e) => handleDragOver(e, mId, lIdx)}
+                        onDragEnd={handleDragEnd}
+                        onDrop={(e) => handleDrop(e, mId, lIdx)}
+                        className="row"
+                        style={{
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          borderBottom: '1px solid var(--border-subtle)',
+                          borderRadius: '8px',
+                          transition: 'all 0.15s ease',
+                          cursor: 'grab',
+                          background: isDragOverThis
+                            ? 'var(--color-primary-50, rgba(99, 102, 241, 0.08))'
+                            : 'transparent',
+                          borderLeft: isDragOverThis
+                            ? '3px solid var(--accent, #6366f1)'
+                            : '3px solid transparent',
+                          opacity: isDraggingThis ? 0.45 : 1,
+                        }}
+                      >
+                        <span className="row" style={{ fontSize: 'var(--fs-sm)', alignItems: 'center', gap: '10px' }}>
+                          <span title="Drag to reorder" style={{ cursor: 'grab', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                            <GripVertical size={16} />
+                          </span>
+                          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', fontWeight: 600, minWidth: '20px' }}>
+                            {lIdx + 1}.
+                          </span>
+                          {(lesson.type === 'VIDEO' || lesson.videoUrl) ? <Video size={15} color="var(--info, #3b82f6)" /> : lesson.type === 'QUIZ' ? <HelpCircle size={15} /> : <FileText size={15} />}
+                          <span style={{ fontWeight: 500 }}>{lesson.title}</span>
+                          <span className="text-muted" style={{ fontSize: 'var(--fs-2xs)' }}>{lesson.durationMinutes ? `${lesson.durationMinutes} min` : ''}</span>
+                          {lesson.contentStatus === 'IN_REVIEW' && (
+                            <span style={{ fontSize: '10px', padding: '2px 6px', background: 'var(--color-warning)', color: '#fff', borderRadius: '4px', marginLeft: 8 }}>IN REVIEW</span>
+                          )}
+                          {lesson.reviewNotes && lesson.contentStatus === 'IN_REVIEW' && (
+                            <span style={{ fontSize: '10px', color: 'var(--color-danger)', marginLeft: 8 }}>Rejected</span>
+                          )}
+                        </span>
+                        <span className="row" style={{ gap: '8px', alignItems: 'center' }}>
+                          <Link to={`${base}/courses/${courseId}/lessons/${lesson._id || lesson.id}/preview`} state={{ lesson }} style={{ fontSize: 'var(--fs-xs)', textDecoration: 'underline', color: 'var(--color-primary-600)', marginRight: '4px' }}>
+                            Preview Lesson
+                          </Link>
+                          {lesson.videoUrl && (
+                            <Link to={`${base}/courses/${courseId}/lessons/${lesson._id || lesson.id}/video-quizzes`} state={{ lesson }} style={{ fontSize: 'var(--fs-xs)', textDecoration: 'underline', color: 'var(--color-primary-600)', marginRight: '4px' }}>
+                              Manage Quizzes
+                            </Link>
+                          )}
+                          {canManageContent && lesson.contentStatus === 'IN_REVIEW' && (
+                            <>
+                              <Button size="sm" variant="outline" onClick={() => setRejectModalTarget({ type: 'lesson', id: lesson._id || lesson.id, moduleId: mId })}>Reject</Button>
+                              <Button size="sm" variant="primary" onClick={(e) => handleApprove(e, 'lesson', mId, lesson._id || lesson.id)}>Approve</Button>
+                            </>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={ArrowUp}
+                            disabled={lIdx === 0}
+                            onClick={() => handleMoveLesson(mId, lIdx, -1)}
+                            title="Move Lesson Up"
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={ArrowDown}
+                            disabled={lIdx === lessonsList.length - 1}
+                            onClick={() => handleMoveLesson(mId, lIdx, 1)}
+                            title="Move Lesson Down"
+                          />
+                          <Link to={`${base}/courses/${courseId}/modules/${mId}/lessons/${lesson._id || lesson.id}/edit`} style={{textDecoration: 'none'}}>
+                            <Button size="sm" variant="ghost" icon={Pencil} title="Edit Lesson" />
+                          </Link>
+                          <Button size="sm" variant="ghost" icon={Trash2} onClick={() => setDeleteLessonTarget({ ...lesson, moduleId: mId })} title="Delete Lesson" />
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          );
+        })
       )}
 
       <Modal open={moduleModal} onClose={() => setModuleModal(false)} title="Add Module" width={420}>
@@ -802,58 +907,38 @@ function ContentTab({ courseId, base, canManageContent }) {
         </div>
       </Modal>
 
-      <Modal open={!!lessonModal} onClose={() => setLessonModal(null)} title={lessonModal?.lessonId ? "Edit Lesson" : "Add Lesson"} width={460}>
-        <form className="stack" id="lesson-form" onSubmit={submitLesson}>
-          <Field label="Lesson Title" required><Input value={lessonForm.title} onChange={(e) => setLessonForm((f) => ({ ...f, title: e.target.value }))} required /></Field>
-          <Field label="Description"><Textarea rows={3} value={lessonForm.description} onChange={(e) => setLessonForm((f) => ({ ...f, description: e.target.value }))} /></Field>
-          <Field label="Type">
-            <Select value={lessonForm.type} onChange={(e) => setLessonForm((f) => ({ ...f, type: e.target.value }))}>
-              <option value="VIDEO">Video</option>
-              <option value="DOCUMENT">Document / PDF</option>
-              <option value="TEXT">Text</option>
-            </Select>
-          </Field>
-          <Field label="Video Source">
-            <div className="stack" style={{ gap: 8 }}>
-              <VimeoUploader 
-                onUploaded={(url) => setLessonForm((f) => ({ ...f, videoUrl: url }))} 
-                label="Upload to Vimeo"
-                videoName={lessonForm.title}
-              />
-            </div>
-            {lessonForm.videoUrl && <div style={{ marginTop: 8, fontSize: 'var(--fs-xs)' }}><a href={lessonForm.videoUrl} target="_blank" rel="noreferrer">Test Video Link</a></div>}
-          </Field>
-          
-          <Field label="Supplemental Document (PDF/Doc)">
-            <FileUploader 
-              accept={{ 'application/pdf': ['.pdf'], 'application/msword': ['.doc', '.docx'] }} 
-              onUploaded={(url) => setLessonForm((f) => ({ ...f, contentUrl: url }))} 
-              label="Upload supplemental document" 
-            />
-            {lessonForm.contentUrl && <div style={{ marginTop: 8, fontSize: 'var(--fs-xs)' }}><a href={buildStaticUrl(lessonForm.contentUrl)} target="_blank" rel="noreferrer">View Uploaded Document</a></div>}
-          </Field>
-        </form>
-        <div className="modal-panel__foot" style={{ margin: '16px -24px -24px', padding: '16px 24px' }}>
-          <Button variant="outline" type="button" onClick={() => setLessonModal(null)}>Cancel</Button>
-          <Button type="submit" form="lesson-form" loading={saving}>{lessonModal?.lessonId ? 'Save Changes' : 'Add Lesson'}</Button>
-        </div>
-      </Modal>
+      <ConfirmDialog
+        open={!!deleteModuleTarget}
+        onClose={() => setDeleteModuleTarget(null)}
+        onConfirm={doDeleteModule}
+        title="Delete Module"
+        description={`Are you sure you want to delete module "${deleteModuleTarget?.title}"? All lessons inside will be deleted.`}
+        confirmLabel="Delete"
+        danger
+      />
 
-      <ConfirmDialog open={!!deleteModuleTarget} onClose={() => setDeleteModuleTarget(null)} onConfirm={doDeleteModule} title="Delete this module?" description="All lessons within it will also be removed." confirmLabel="Delete Module" />
-      <ConfirmDialog open={!!deleteLessonTarget} onClose={() => setDeleteLessonTarget(null)} onConfirm={doDeleteLesson} title="Delete this lesson?" confirmLabel="Delete Lesson" />
+      <ConfirmDialog
+        open={!!deleteLessonTarget}
+        onClose={() => setDeleteLessonTarget(null)}
+        onConfirm={doDeleteLesson}
+        title="Delete Lesson"
+        description={`Are you sure you want to delete lesson "${deleteLessonTarget?.title}"?`}
+        confirmLabel="Delete"
+        danger
+      />
 
       <Modal open={!!rejectModalTarget} onClose={() => setRejectModalTarget(null)} title={`Reject ${rejectModalTarget?.type === 'module' ? 'Module' : 'Lesson'}`}>
         <div style={{ padding: '24px 0' }}>
           <p style={{ marginBottom: '16px', fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
-            Provide a reason for rejection. This keeps the item in draft mode so the faculty can make changes.
+            Provide a reason for rejection. This will notify the faculty to make corrections.
           </p>
           <Field label="Rejection Reason">
-            <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={4} />
+            <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g. Video 2 has audio issues..." rows={4} />
           </Field>
         </div>
         <div className="modal-panel__foot" style={{ margin: '0 -24px -24px', padding: '16px 24px', justifyContent: 'flex-end', gap: '8px' }}>
           <Button variant="outline" onClick={() => setRejectModalTarget(null)}>Cancel</Button>
-          <Button variant="primary" onClick={doReject} disabled={!rejectReason.trim()}>Reject Item</Button>
+          <Button variant="primary" onClick={doReject} disabled={!rejectReason.trim()}>Reject Content</Button>
         </div>
       </Modal>
     </div>
