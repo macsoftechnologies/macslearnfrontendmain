@@ -214,9 +214,9 @@ export default function TakeExam() {
                   )}
 
                   <div className="stack" style={{ gap: '8px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Upload Paper / Document (PDF, DOCX, DOC, JPG, PNG)</label>
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Upload File (PDF, Word DOC/DOCX, TXT)</label>
                     <FileUploader 
-                      accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
+                      accept=".pdf,.docx,.doc,.txt,.rtf,.jpg,.jpeg,.png"
                       value={answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl || (typeof answers[questions[currentIndex]._id || questions[currentIndex].id] === 'string' ? answers[questions[currentIndex]._id || questions[currentIndex].id] : '')}
                       onChange={(url, name) => {
                         const qId = questions[currentIndex]._id || questions[currentIndex].id;

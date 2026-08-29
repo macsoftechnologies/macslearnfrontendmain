@@ -134,8 +134,8 @@ export default function FacultyExamAttemptReview() {
               dynamicIsCorrect = true;
               dynamicMarks = q.marks;
             }
-          } else if (q.type === 'SHORT_ANSWER') {
-            dynamicIsCorrect = answer?.isCorrect || false;
+          } else if (q.type === 'SHORT_ANSWER' || q.type === 'BOOK_REVIEW' || q.type === 'RESEARCH_PAPER') {
+            dynamicIsCorrect = (answer?.marks || 0) > 0;
             dynamicMarks = answer?.marks || 0;
           }
 

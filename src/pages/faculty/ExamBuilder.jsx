@@ -202,9 +202,10 @@ export default function ExamBuilder() {
           )}
           <Field label="Question Type">
             <Select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-              <option value="MCQ">Multiple Choice</option>
+              <option value="MCQ">Multiple Choice (MCQ)</option>
               <option value="TRUE_FALSE">True / False</option>
-              {/* <option value="SHORT_ANSWER">Short Answer</option> */}
+              <option value="BOOK_REVIEW">Book Review (Faculty/Admin Evaluated)</option>
+              <option value="RESEARCH_PAPER">Research Paper (Faculty/Admin Evaluated)</option>
             </Select>
           </Field>
           <Field label="Question Text" required><Textarea rows={3} value={form.questionText} onChange={(e) => setForm((f) => ({ ...f, questionText: e.target.value }))} required /></Field>
@@ -246,18 +247,19 @@ export default function ExamBuilder() {
           )}
 
           <div className="form-grid" style={{ marginTop: 'var(--sp-4)' }}>
-            {form.type !== 'MCQ' && (
+            {form.type === 'TRUE_FALSE' && (
               <Field label="Correct Answer">
-                {form.type === 'TRUE_FALSE' ? (
-                  <Select value={form.correctAnswer} onChange={(e) => setForm((f) => ({ ...f, correctAnswer: e.target.value }))}>
-                    <option value="">Select answer</option>
-                    <option value="true">True</option>
-                    <option value="false">False</option>
-                  </Select>
-                ) : (
-                  <Input value={form.correctAnswer} onChange={(e) => setForm((f) => ({ ...f, correctAnswer: e.target.value }))} placeholder="Expected keyword/answer" />
-                )}
+                <Select value={form.correctAnswer} onChange={(e) => setForm((f) => ({ ...f, correctAnswer: e.target.value }))}>
+                  <option value="">Select answer</option>
+                  <option value="true">True</option>
+                  <option value="false">False</option>
+                </Select>
               </Field>
+            )}
+            {(form.type === 'BOOK_REVIEW' || form.type === 'RESEARCH_PAPER') && (
+              <div style={{ gridColumn: '1 / -1', padding: '10px 14px', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe', fontSize: '13px', color: '#1e40af' }}>
+                💡 <strong>{form.type === 'BOOK_REVIEW' ? 'Book Review' : 'Research Paper'}:</strong> Students will upload a document/paper and write their summary. Submissions will be manually evaluated and scored by Faculty or Org Admin.
+              </div>
             )}
             <Field label="Marks" required><Input type="number" min={1} value={form.marks} onChange={(e) => setForm((f) => ({ ...f, marks: e.target.value }))} required disabled={exam.isPublished || exam.status === 'PUBLISHED'} /></Field>
           </div>

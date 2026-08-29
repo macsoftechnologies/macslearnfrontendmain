@@ -10,6 +10,7 @@ import * as batchesApi from '../../api/academicBatches';
 import * as coursesApi from '../../api/courses';
 import * as usersApi from '../../api/users';
 import * as studentsApi from '../../api/students';
+import { useAuth } from '../../contexts/AuthContext';
 import client, { extractErrorMessages } from '../../api/client';
 import Button from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -21,6 +22,7 @@ import PageLoader from '../../components/ui/PageLoader';
 import EmptyState from '../../components/ui/EmptyState';
 
 export default function LiveSessions() {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [batches, setBatches] = useState([]);
@@ -81,14 +83,20 @@ export default function LiveSessions() {
         }).catch(() => []),
         batchesApi.list().catch(() => []),
         coursesApi.list({ limit: 200 }).catch(() => []),
-        usersApi.list({ role: 'FACULTY', limit: 100 }).catch(() => []),
+        usersApi.list({ userType: 'FACULTY', organizationId: user?.organizationId || undefined, limit: 500 }).catch(() => []),
         studentsApi.list({ limit: 200 }).catch(() => [])
       ]);
 
       setSessions(extractArray(sessRes));
       setBatches(extractArray(batchRes));
       setCourses(extractArray(courseRes));
-      setFaculties(extractArray(facRes));
+      const rawFaculties = extractArray(facRes);
+      const facultyOnly = rawFaculties.filter(u => {
+        const isFaculty = u.userType === 'FACULTY' || u.role === 'FACULTY';
+        const isOrgMatch = !user?.organizationId || u.organizationId === user.organizationId;
+        return isFaculty && isOrgMatch;
+      });
+      setFaculties(facultyOnly);
       setAllStudents(extractArray(stuRes));
     } catch (err) {
       extractErrorMessages(err).forEach(m => toast.error(m));
