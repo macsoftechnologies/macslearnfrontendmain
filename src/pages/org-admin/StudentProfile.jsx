@@ -598,7 +598,9 @@ export default function StudentProfile() {
                           {/* Courses Grid */}
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 'var(--sp-5)', alignItems: 'start' }}>
                             {semester.courses.map(enrollment => {
-                              const courseExams = (examResults || []).filter(e => e.exam?.courseId === enrollment.courseId);
+                              const courseIdObj = (typeof enrollment.courseId === 'object' && enrollment.courseId !== null) ? enrollment.courseId : (enrollment.course || {});
+                              const actualCourseId = courseIdObj.id || courseIdObj._id || enrollment.courseId;
+                              const courseExams = (examResults || []).filter(e => (e.exam?.courseId === actualCourseId || e.courseId === actualCourseId || e.course_id === actualCourseId));
                               let progress = enrollment.progressPercentage || 0;
                               
                               if (progress === 0 && enrollment.curriculum) {
@@ -626,7 +628,7 @@ export default function StudentProfile() {
                                     border: isExpanded ? '2px solid var(--color-primary-500)' : '1px solid var(--border)',
                                     cursor: 'pointer'
                                   }}
-                                  onClick={() => !isExpanded && toggleCourse(enrollment.id, enrollment.courseId)}
+                                  onClick={() => !isExpanded && toggleCourse(enrollment.id, actualCourseId)}
                                 >
                                   {/* CARD HEADER (Always Visible) */}
                                   <div style={{ padding: 'var(--sp-5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
