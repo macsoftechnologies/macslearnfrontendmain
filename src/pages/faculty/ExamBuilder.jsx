@@ -100,16 +100,19 @@ export default function ExamBuilder() {
         setSaving(false);
         return;
       }
-    } else if (!form.correctAnswer || form.correctAnswer.trim() === '') {
-      setFormError('Please provide the correct answer.');
-      setSaving(false);
-      return;
+    } else if (form.type === 'TRUE_FALSE') {
+      if (!form.correctAnswer || form.correctAnswer.trim() === '') {
+        setFormError('Please select whether True or False is the correct answer.');
+        setSaving(false);
+        return;
+      }
     }
 
     const payload = {
       ...form,
       marks: Number(form.marks),
       options: form.type === 'MCQ' ? form.options.filter((o) => o.text.trim() !== '') : undefined,
+      correctAnswer: (form.type === 'BOOK_REVIEW' || form.type === 'RESEARCH_PAPER') ? 'N/A' : form.correctAnswer,
     };
     try {
       if (editing) {
