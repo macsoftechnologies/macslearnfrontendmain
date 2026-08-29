@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, BrainCircuit, BookOpen, Zap, ListChecks, X, CheckCircle, 
@@ -184,8 +185,8 @@ export default function AIAssistantPanel({
 
   if (!aiPanelOpen) return null;
 
-  return (
-    <div className="ai-overlay-cinematic" style={{ zIndex: 9999 }}>
+  return createPortal(
+    <div className="ai-overlay-cinematic">
       <div className="ai-panel-cinematic">
         {/* Header */}
         <div className="ai-header-cinematic">
@@ -594,7 +595,8 @@ export default function AIAssistantPanel({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

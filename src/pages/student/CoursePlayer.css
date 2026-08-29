@@ -716,15 +716,23 @@
    CINEMATIC SACRED AI ASSISTANT PANEL STYLES
    ========================================================================== */
 .ai-overlay-cinematic {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
   animation: ai-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes ai-fade-in {
@@ -733,16 +741,18 @@
 }
 
 .ai-panel-cinematic {
-  width: 94vw;
-  max-width: min(880px, 94vw);
-  max-height: min(86vh, 720px);
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 860px !important;
+  max-height: 86vh !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
+  margin: auto !important;
+  box-sizing: border-box !important;
   animation: ai-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 

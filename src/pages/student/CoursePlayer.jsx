@@ -341,10 +341,15 @@ export default function CoursePlayer() {
     }
     client.get(`/courses/${courseId}/content/lessons/${lessonId}/ai-data`)
       .then((res) => {
-        const payload = res.data?.data?.data || res.data?.data || res.data;
-        const hasData = !!(payload && (payload.summary || (Array.isArray(payload.quizPool) && payload.quizPool.length > 0) || (Array.isArray(payload.keyTakeaways) && payload.keyTakeaways.length > 0) || (Array.isArray(payload.backstory) && payload.backstory.length > 0) || payload.transcript));
-        setHasAiData(hasData);
-        if (hasData) setAiData(payload);
+        const isFound = res.data?.found === true && res.data?.hasAiData !== false;
+        const payload = res.data?.data?.data || res.data?.data;
+        const hasValidContent = isFound && !!payload && (
+          (typeof payload.summary === 'string' && payload.summary.trim().length > 0) ||
+          (Array.isArray(payload.quiz_pool) && payload.quiz_pool.length > 0) ||
+          (Array.isArray(payload.key_takeaways) && payload.key_takeaways.length > 0)
+        );
+        setHasAiData(hasValidContent);
+        if (hasValidContent) setAiData(payload);
         else setAiData(null);
       })
       .catch(() => {

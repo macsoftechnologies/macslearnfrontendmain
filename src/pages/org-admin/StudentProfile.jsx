@@ -543,7 +543,7 @@ export default function StudentProfile() {
                       columns={[
                         { key: 'course', header: 'Course Name', render: (r) => <span style={{ fontWeight: 600 }}>{r.courseTitle || r.course?.title || '—'}</span> },
                         { key: 'credits', header: 'Credit Earned', render: (r) => Number(r.course?.credits || 0).toFixed(0) },
-                        { key: 'assignment', header: 'Assignments (70)', render: (r) => r.grade ? `${r.grade.assignmentScore ?? '—'} / 70` : '—' },
+                        { key: 'assignment', header: 'Internal Assessment (70)', render: (r) => r.grade ? `${r.grade.assignmentScore ?? '—'} / 70` : '—' },
                         { key: 'exam', header: 'Final Exam (30)', render: (r) => r.grade ? `${r.grade.finalExamScore ?? '—'} / 30` : '—' },
                         { key: 'marks', header: 'Marks (100)', render: (r) => r.grade ? <strong>{r.grade.totalScore ?? '—'}</strong> : '—' },
                         { key: 'grade', header: 'Grade', render: (r) => r.grade?.grade ? <StatusBadge status={r.grade.grade === 'F' ? 'FAILED' : 'SUCCESS'} label={r.grade.grade} /> : <span className="text-muted">—</span> },
@@ -732,25 +732,61 @@ export default function StudentProfile() {
                                             </div>
                                           </div>
                                           
-                                          {enrollment.curriculum && (
-                                            <div>
-                                              <h5 style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)' }}>Curriculum Breakdown</h5>
-                                              <div className="stack" style={{ gap: 'var(--sp-2)' }}>
-                                                <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
-                                                  <span className="row" style={{ color: 'var(--text-muted)' }}><PlayCircle size={14} style={{ marginRight: 6, color: '#3b82f6' }} /> Videos Watched</span>
-                                                  <span style={{ fontWeight: 600 }}>{enrollment.curriculum.videos.completed} / {enrollment.curriculum.videos.total}</span>
+                                          {(() => {
+                                            const vqExams = courseExams.filter(e => !e.exam?.isFinalExam);
+                                            const finalExams = courseExams.filter(e => e.exam?.isFinalExam);
+                                            const vqPassedCount = vqExams.filter(e => e.isPassed).length;
+                                            const vqTotalCount = vqExams.length;
+
+                                            // Calculate live 70/30 score
+                                            let autoAssessment70 = enrollment.grade?.assignmentScore !== undefined && enrollment.grade?.assignmentScore !== null
+                                              ? Number(enrollment.grade.assignmentScore)
+                                              : (vqTotalCount > 0 ? Math.round(((vqPassedCount / vqTotalCount) * 65 + 5) * 100) / 100 : 0);
+
+                                            let finalExamScore30 = enrollment.grade?.finalExamScore !== undefined && enrollment.grade?.finalExamScore !== null
+                                              ? Number(enrollment.grade.finalExamScore)
+                                              : (finalExams.length > 0 && finalExams[0].marksObtained !== undefined ? Math.round((Number(finalExams[0].marksObtained) / (finalExams[0].exam?.totalMarks || 100)) * 30 * 100) / 100 : 0);
+
+                                            const compTotal = Math.min(100, Math.round((autoAssessment70 + finalExamScore30) * 100) / 100);
+                                            const getGradeLetter = (s) => s >= 80 ? 'A+' : s >= 75 ? 'A' : s >= 70 ? 'A-' : s >= 65 ? 'B+' : s >= 60 ? 'B' : s >= 55 ? 'B-' : s >= 50 ? 'C+' : s >= 45 ? 'C' : s >= 40 ? 'C-' : 'F';
+                                            const compGrade = getGradeLetter(compTotal);
+
+                                            return (
+                                              <div>
+                                                <h5 style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)' }}>Curriculum Breakdown</h5>
+                                                <div className="stack" style={{ gap: 'var(--sp-2)' }}>
+                                                  <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
+                                                    <span className="row" style={{ color: 'var(--text-muted)' }}><PlayCircle size={14} style={{ marginRight: 6, color: '#3b82f6' }} /> Videos Watched</span>
+                                                    <span style={{ fontWeight: 600 }}>{enrollment.curriculum?.videos?.completed || 0} / {enrollment.curriculum?.videos?.total || 0}</span>
+                                                  </div>
+                                                  <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
+                                                    <span className="row" style={{ color: 'var(--text-muted)' }}><FileText size={14} style={{ marginRight: 6, color: '#8b5cf6' }} /> Internal Assessments (Video Quizzes & Checkpoints)</span>
+                                                    <span style={{ fontWeight: 600 }}>{vqPassedCount} / {vqTotalCount} Questions Passed</span>
+                                                  </div>
+                                                  <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
+                                                    <span className="row" style={{ color: 'var(--text-muted)' }}><CheckCircle2 size={14} style={{ marginRight: 6, color: '#f59e0b' }} /> Final Exam</span>
+                                                    <span style={{ fontWeight: 600 }}>{finalExams.length > 0 ? (finalExams[0].isPassed ? 'Completed (Passed)' : 'Submitted') : 'Not Attempted Yet'}</span>
+                                                  </div>
                                                 </div>
-                                                <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
-                                                  <span className="row" style={{ color: 'var(--text-muted)' }}><FileText size={14} style={{ marginRight: 6, color: '#f59e0b' }} /> Exams Attempted</span>
-                                                  <span style={{ fontWeight: 600 }}>{enrollment.curriculum.exams.completed} / {enrollment.curriculum.exams.total}</span>
-                                                </div>
-                                                <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
-                                                  <span className="row" style={{ color: 'var(--text-muted)' }}><FileSignature size={14} style={{ marginRight: 6, color: '#10b981' }} /> Assignments Submitted</span>
-                                                  <span style={{ fontWeight: 600 }}>{enrollment.curriculum.assignments.completed} / {enrollment.curriculum.assignments.total}</span>
+
+                                                <div style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-3)', backgroundColor: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd' }}>
+                                                  <h5 style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: '#0369a1', marginBottom: 'var(--sp-2)' }}>70/30 Composite Assessment Marks</h5>
+                                                  <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', marginBottom: 4 }}>
+                                                    <span>Automated Assessment (70%):</span>
+                                                    <strong style={{ color: '#0369a1' }}>{autoAssessment70} / 70</strong>
+                                                  </div>
+                                                  <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', marginBottom: 4 }}>
+                                                    <span>Course Final Exam (30%):</span>
+                                                    <strong>{finalExamScore30} / 30</strong>
+                                                  </div>
+                                                  <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', fontWeight: 700, borderTop: '1px dashed #7dd3fc', paddingTop: 4 }}>
+                                                    <span>Total Composite Score:</span>
+                                                    <strong style={{ color: '#0284c7' }}>{compTotal} / 100 ({compGrade})</strong>
+                                                  </div>
                                                 </div>
                                               </div>
-                                            </div>
-                                          )}
+                                            );
+                                          })()}
 
                                           {enrollment.grade && (
                                             <div style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-3)', backgroundColor: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd' }}>
