@@ -37,6 +37,9 @@ import OrgTeam from './pages/org-admin/OrgTeam';
 import Courses from './pages/org-admin/Courses';
 import CourseForm from './pages/org-admin/CourseForm';
 import CourseDetail from './pages/org-admin/CourseDetail';
+import LiveSessions from './pages/org-admin/LiveSessions';
+import ChatHub from './pages/shared/ChatHub';
+import StudentLiveSessions from './pages/student/StudentLiveSessions';
 import LessonPreview from './pages/org-admin/LessonPreview';
 import Regions from './pages/org-admin/Regions';
 import Enrollments from './pages/org-admin/Enrollments';
@@ -184,6 +187,8 @@ export default function App() {
               <Route path="/admin/transcripts" element={<GenerateTranscriptPage />} />
               <Route path="/admin/dmin-evaluations" element={<DMinEvaluations />} />
               <Route path="/admin/courses" element={<Courses />} />
+              <Route path="/admin/live-sessions" element={<LiveSessions />} />
+              <Route path="/admin/chat" element={<ChatHub />} />
               <Route path="/admin/approvals" element={<ContentApprovals />} />
               <Route path="/admin/courses/create" element={<CourseForm />} />
               <Route path="/admin/courses/:id/edit" element={<CourseForm />} />

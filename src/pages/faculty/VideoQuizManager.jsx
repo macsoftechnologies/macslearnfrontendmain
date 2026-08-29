@@ -310,7 +310,55 @@ export default function VideoQuizManager() {
                               <Button size="sm" variant="ghost" icon={Trash2} onClick={() => setDeleteId(q._id || q.id)} />
                             </div>
                           </div>
-                          <p style={{ fontSize: 'var(--fs-sm)', fontWeight: 500 }}>{q.questionText}</p>
+                          <p style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px' }}>{q.questionText}</p>
+                          
+                          {/* Options List */}
+                          {(() => {
+                            let rawOpts = q.options;
+                            if (typeof rawOpts === 'string') {
+                              try { rawOpts = JSON.parse(rawOpts); } catch (e) { rawOpts = []; }
+                            }
+                            if (!Array.isArray(rawOpts) || rawOpts.length === 0) return null;
+
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                                {rawOpts.map((opt, idx) => {
+                                  const optText = typeof opt === 'object' && opt !== null ? opt.text : opt;
+                                  const isCorrect = (typeof opt === 'object' && opt !== null && opt.isCorrect) || 
+                                                    (q.correctAnswer && (q.correctAnswer === optText || q.correctAnswer === String.fromCharCode(65 + idx)));
+
+                                  return (
+                                    <div
+                                      key={idx}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.8rem',
+                                        background: isCorrect ? '#ecfdf5' : '#ffffff',
+                                        border: isCorrect ? '1px solid #10b981' : '1px solid var(--border-subtle, #e2e8f0)',
+                                        color: isCorrect ? '#065f46' : 'var(--text-primary)'
+                                      }}
+                                    >
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontWeight: 700, minWidth: '16px', color: isCorrect ? '#10b981' : 'var(--text-muted)' }}>
+                                          {String.fromCharCode(65 + idx)}.
+                                        </span>
+                                        <span style={{ fontWeight: isCorrect ? 600 : 400 }}>{optText}</span>
+                                      </div>
+                                      {isCorrect && (
+                                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                          ✓ Correct
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
                         </div>
                       ))}
                     </div>
