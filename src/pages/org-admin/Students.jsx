@@ -400,28 +400,23 @@ export default function Students() {
         </div>
       </Modal>
 
-      {/* MODAL 2: STAGE 2 - FINAL APPROVAL & ENROLLMENT */}
+      {/* MODAL 2: STAGE 2 - FINAL APPROVAL & ADMISSION */}
       <Modal 
         open={!!approveModalTarget} 
         onClose={() => setApproveModalTarget(null)} 
         title="Final Admission Approval" 
-        subtitle={`Approve and assign enrollment for: ${approveModalTarget?.fullName}`} 
-        width={560}
+        subtitle={`Approve admission for: ${approveModalTarget?.fullName}`} 
+        width={500}
       >
         <div className="stack" style={{ gap: '1.25rem' }}>
-          <div style={{ padding: '0.75rem', background: 'var(--bg-surface-muted)', borderRadius: '8px', fontSize: '0.88rem' }}>
+          <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-surface-muted, #f8fafc)', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '8px', fontSize: '0.88rem' }}>
             <strong>Track:</strong> {approveModalTarget?.ataStatus === 'ATA' ? 'ATA (Asia Theological Association)' : 'NON-ATA'} | <strong>Interview Status:</strong> {approveModalTarget?.interviewStatus || 'PENDING'}
           </div>
 
           <Field label="Admitted Program" required>
             <Select 
               value={approvalForm.programId} 
-              onChange={(e) => {
-                const newProgId = e.target.value;
-                const prog = programs.find(p => (p.id || p._id) === newProgId);
-                const { primaryAutoBatch } = computeBatchOptionsForProgram(prog);
-                setApprovalForm(f => ({ ...f, programId: newProgId, autoBatchName: primaryAutoBatch }));
-              }}
+              onChange={(e) => setApprovalForm(f => ({ ...f, programId: e.target.value }))}
               required
             >
               <option value="">-- Select Program --</option>
@@ -429,91 +424,12 @@ export default function Students() {
             </Select>
           </Field>
 
-          {/* Cohort Assignment Option */}
-          <div style={{ background: 'var(--bg-surface-muted, #f8fafc)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle, #e2e8f0)' }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>
-              Cohort & Course Enrollment Policy:
-            </label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.88rem' }}>
-                <input 
-                  type="radio" 
-                  name="enrollmentTiming" 
-                  value="PURCHASE" 
-                  checked={approvalForm.enrollmentTiming === 'PURCHASE'} 
-                  onChange={() => setApprovalForm(f => ({ ...f, enrollmentTiming: 'PURCHASE' }))}
-                  style={{ marginTop: '3px' }}
-                />
-                <div>
-                  <strong style={{ color: '#10b981' }}>Assign Cohort upon First Course Purchase (Recommended)</strong>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Student is admitted. Their intake batch and semester courses will be assigned dynamically based on when they actually pay/checkout.
-                  </div>
-                </div>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.88rem' }}>
-                <input 
-                  type="radio" 
-                  name="enrollmentTiming" 
-                  value="IMMEDIATE" 
-                  checked={approvalForm.enrollmentTiming === 'IMMEDIATE'} 
-                  onChange={() => setApprovalForm(f => ({ ...f, enrollmentTiming: 'IMMEDIATE' }))}
-                  style={{ marginTop: '3px' }}
-                />
-                <div>
-                  <strong>Assign Fixed Cohort & Enroll Immediately (Offline Scholarship)</strong>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Instantly enrolls the student into the active semester's courses without requiring checkout.
-                  </div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {approvalForm.enrollmentTiming === 'IMMEDIATE' && (
-            <div className="form-grid">
-              <Field label="Academic Batch">
-                <Select 
-                  value={approvalForm.batchId} 
-                  onChange={(e) => setApprovalForm(f => ({ ...f, batchId: e.target.value }))}
-                >
-                  {(() => {
-                    const prog = programs.find(p => (p.id || p._id) === approvalForm.programId);
-                    const { primaryAutoBatch, configuredOptions } = computeBatchOptionsForProgram(prog);
-                    const primaryClean = (approvalForm.autoBatchName || primaryAutoBatch || '').replace(' (Auto)', '').trim();
-                    const otherConfigured = configuredOptions.filter(opt => opt.trim() !== primaryClean);
-
-                    return (
-                      <>
-                        <option value="">{approvalForm.autoBatchName || primaryAutoBatch || 'Apr - Aug 2026 Batch (Auto)'}</option>
-                        {otherConfigured.map((opt, idx) => (
-                          <option key={`cfg-${idx}`} value={`auto:${opt}`}>{opt}</option>
-                        ))}
-                        {filteredBatches.filter(b => b.name !== primaryClean && !otherConfigured.includes(b.name)).map(b => (
-                          <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.batchCode}</option>
-                        ))}
-                      </>
-                    );
-                  })()}
-                </Select>
-              </Field>
-
-              <div style={{ padding: '10px 14px', background: 'var(--bg-surface-muted, #f8fafc)', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '8px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '22px' }}>
-                <span style={{ fontWeight: 600, color: 'var(--text-muted, #64748b)' }}>Starting Semester</span>
-                <span style={{ color: '#2563eb', fontWeight: 700, background: '#eff6ff', padding: '2px 10px', borderRadius: '4px' }}>
-                  Semester 1 (Auto)
-                </span>
-              </div>
-            </div>
-          )}
-
           <Field label="Admission / Interview Remarks">
             <Textarea 
-              rows={2} 
+              rows={3} 
               value={approvalForm.admissionNotes} 
               onChange={(e) => setApprovalForm(f => ({ ...f, admissionNotes: e.target.value }))} 
-              placeholder="e.g. Interview successfully completed. Approved for Batch 1." 
+              placeholder="e.g. Interview cleared. Application approved." 
             />
           </Field>
 
