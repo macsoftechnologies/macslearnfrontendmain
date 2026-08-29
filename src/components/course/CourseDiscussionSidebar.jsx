@@ -158,8 +158,26 @@ export default function CourseDiscussionSidebar({ isOpen, onClose, courseId }) {
   const canAccept = activeThread && !activeThread.isResolved && (user?.userId === activeThread.authorId?._id || user?.userType === 'FACULTY' || user?.userType === 'ORG_USER');
   const canCreateChannel = user?.userType === 'FACULTY' || user?.userType === 'ORG_USER' || user?.userType === 'SUPER_ADMIN';
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   return (
-    <div className={`discussion-sidebar ${isOpen ? 'open' : ''}`}>
+    <>
+      {isOpen && <div className="discussion-backdrop" onClick={onClose} />}
+      <div 
+        className={`discussion-sidebar ${isOpen ? 'open' : ''}`}
+        aria-hidden={!isOpen}
+        role="dialog"
+        aria-modal="true"
+      >
       <div className="discussion-sidebar__header">
         {view === 'chat' || view === 'new_thread' ? (
           <button className="icon-btn" onClick={() => setView('channels')} title="Back to Channels">
@@ -347,6 +365,7 @@ export default function CourseDiscussionSidebar({ isOpen, onClose, courseId }) {
           </>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

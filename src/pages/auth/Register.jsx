@@ -242,8 +242,8 @@ export default function Register() {
     return (
       <AuthShell slug={slug} eyebrow="Registration" title="Application Submitted">
         <div className="stack" style={{ alignItems: 'center', textAlign: 'center' }}>
-          <CheckCircle2 size={48} color="var(--success)" />
-          <h3 style={{ margin: '1rem 0 0.5rem', color: 'var(--text-primary)' }}>Application Received!</h3>
+          <CheckCircle2 size={48} color="#059669" />
+          <h3 style={{ margin: '1rem 0 0.5rem', color: '#0f172a' }}>Application Received!</h3>
           <p className="text-muted" style={{ margin: '0 0 1.5rem', lineHeight: 1.6 }}>
             Your admission application has been registered under <strong>{form.ataStatus === 'ATA' ? 'ATA (Asia Theological Association)' : 'NON-ATA'}</strong> track.
             The administration will review your details and schedule an interview.
@@ -259,33 +259,33 @@ export default function Register() {
   
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-app)', alignItems: 'center', padding: '3rem 1rem' }}>
-      <div style={{ width: '100%', maxWidth: 780 }}>
+    <div className="student-register-page" data-theme="light" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc', color: '#0f172a', alignItems: 'center', padding: '3rem 1rem' }}>
+      <div style={{ width: '100%', maxWidth: 820 }}>
 
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.1rem', margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 800, margin: '0 0 0.5rem', color: '#0f172a', letterSpacing: '-0.02em' }}>
             Student Enrollment Application
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>
+          <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>
             Fill in all required details below to complete your admission registration.
           </p>
         </div>
 
-        <div style={{ background: 'var(--bg-surface-card)', padding: '2.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-md)' }}>
+        <div style={{ background: '#ffffff', padding: '2.5rem', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 20px 45px -10px rgba(0, 0, 0, 0.07)' }}>
           <form ref={formRef} className="stack" onSubmit={onSubmit} noValidate style={{ gap: '2rem' }}>
 
             {/* SECTION 1: ADMISSION TRACK & BASIC INFO */}
             <section className="stack" style={{ gap: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-subtle)' }}>
-                <h3 style={{ fontSize: '1.15rem', margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <ShieldCheck size={20} color="var(--primary)" /> 1. Admission Track & Personal Details
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px solid #e2e8f0' }}>
+                <h3 style={{ fontSize: '1.15rem', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <ShieldCheck size={20} color="#4f46e5" /> 1. Admission Track & Personal Details
                 </h3>
               </div>
 
               {/* ATA vs NON-ATA Prominent Dropdown */}
               <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                 <Field label="Accreditation / Track" required error={errors.ataStatus}>
-                  <Select name="ataStatus" value={form.ataStatus} onChange={handleChange} style={{ fontWeight: 600, borderColor: errors.ataStatus ? 'var(--danger)' : undefined }}>
+                  <Select name="ataStatus" value={form.ataStatus} onChange={handleChange} style={{ fontWeight: 600, borderColor: errors.ataStatus ? '#ef4444' : undefined }}>
                     <option value="">-- Select Track --</option>
                     <option value="ATA">ATA (Asia Theological Association)</option>
                     <option value="NON_ATA">NON-ATA</option>
@@ -293,7 +293,7 @@ export default function Register() {
                 </Field>
 
                 <Field label="Region" required error={errors.regionId}>
-                  <Select name="regionId" value={form.regionId} onChange={handleChange} style={{ borderColor: errors.regionId ? 'var(--danger)' : undefined }}>
+                  <Select name="regionId" value={form.regionId} onChange={handleChange} style={{ borderColor: errors.regionId ? '#ef4444' : undefined }}>
                     <option value="">-- Select Region --</option>
                     {regions.map(r => (
                       <option key={r._id || r.id} value={r._id || r.id}>
@@ -331,7 +331,7 @@ export default function Register() {
 
             {/* SECTION 2: RESIDENCE & ADDITIONAL DETAILS */}
             <section className="stack" style={{ gap: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.15rem', margin: 0, paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}>
+              <h3 style={{ fontSize: '1.15rem', margin: 0, paddingBottom: '0.5rem', borderBottom: '1px solid #e2e8f0', color: '#0f172a' }}>
                 2. Residence & Background Details
               </h3>
 
@@ -398,10 +398,10 @@ export default function Register() {
 
             {/* SECTION 3: DEDICATED UPLOADED DOCUMENTS & TRANSCRIPTS */}
             <section className="stack" style={{ gap: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.15rem', margin: 0, paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}>
+              <h3 style={{ fontSize: '1.15rem', margin: 0, paddingBottom: '0.5rem', borderBottom: '1px solid #e2e8f0', color: '#0f172a' }}>
                 3. Required Certificates & Academic Transcripts
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '-0.5rem 0 0.5rem' }}>
+              <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '-0.5rem 0 0.5rem' }}>
                 Upload clear scanned copies (.pdf, .png, .jpg). The original file names will be preserved.
               </p>
 
@@ -414,7 +414,7 @@ export default function Register() {
                   label="Upload Passport Photo" 
                 />
                 {customProfile.documents?.photo?.name && (
-                  <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: '#059669', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <FileText size={15} /> {customProfile.documents.photo.name} ✓
                   </div>
                 )}
@@ -430,7 +430,7 @@ export default function Register() {
                     label="Upload Aadhaar Front" 
                   />
                   {customProfile.documents?.aadhaarFront?.name && (
-                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: '#059669' }}>
                       📄 {customProfile.documents.aadhaarFront.name} ✓
                     </div>
                   )}
@@ -444,7 +444,7 @@ export default function Register() {
                     label="Upload Aadhaar Back" 
                   />
                   {customProfile.documents?.aadhaarBack?.name && (
-                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: '#059669' }}>
                       📄 {customProfile.documents.aadhaarBack.name} ✓
                     </div>
                   )}
@@ -461,7 +461,7 @@ export default function Register() {
                     label="Upload 10th Certificate" 
                   />
                   {customProfile.documents?.tenthCert?.name && (
-                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: '#059669' }}>
                       📄 {customProfile.documents.tenthCert.name} ✓
                     </div>
                   )}
@@ -475,7 +475,7 @@ export default function Register() {
                     label="Upload Inter Certificate" 
                   />
                   {customProfile.documents?.interCert?.name && (
-                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: '#059669' }}>
                       📄 {customProfile.documents.interCert.name} ✓
                     </div>
                   )}
@@ -492,7 +492,7 @@ export default function Register() {
                     label="Upload Degree Certificate" 
                   />
                   {customProfile.documents?.degreeCert?.name && (
-                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: '#059669' }}>
                       📄 {customProfile.documents.degreeCert.name} ✓
                     </div>
                   )}
@@ -506,7 +506,7 @@ export default function Register() {
                     label="Upload Degree Transcript" 
                   />
                   {customProfile.documents?.degreeTranscript?.name && (
-                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+                    <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: '#059669' }}>
                       📄 {customProfile.documents.degreeTranscript.name} ✓
                     </div>
                   )}
@@ -522,7 +522,7 @@ export default function Register() {
                   label="Upload Reference Letter" 
                 />
                 {customProfile.documents?.referenceLetter?.name && (
-                  <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+                  <div style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: '#059669' }}>
                     📄 {customProfile.documents.referenceLetter.name} ✓
                   </div>
                 )}
@@ -539,12 +539,12 @@ export default function Register() {
                 {customProfile.documents?.otherCertificates?.length > 0 && (
                   <ul style={{ margin: '0.75rem 0 0', paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     {customProfile.documents.otherCertificates.map((doc, idx) => (
-                      <li key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.75rem', background: 'var(--bg-surface-muted)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <li key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.75rem', background: '#f1f5f9', borderRadius: '6px', fontSize: '0.85rem' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <FileText size={15} color="var(--primary)" />
+                          <FileText size={15} color="#4f46e5" />
                           <strong>{doc.name || `Certificate ${idx + 1}`}</strong>
                         </span>
-                        <button type="button" onClick={() => handleRemoveOtherCert(idx)} style={{ border: 'none', background: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
+                        <button type="button" onClick={() => handleRemoveOtherCert(idx)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}>
                           <Trash2 size={14} />
                         </button>
                       </li>
@@ -556,25 +556,25 @@ export default function Register() {
 
             {/* SECTION 4: DECLARATION */}
             <section className="stack" style={{ gap: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.15rem', margin: 0, paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}>
+              <h3 style={{ fontSize: '1.15rem', margin: 0, paddingBottom: '0.5rem', borderBottom: '1px solid #e2e8f0', color: '#0f172a' }}>
                 4. Declaration
               </h3>
-              <div style={{ background: 'var(--bg-surface-muted)', padding: '1.5rem', borderRadius: '8px', border: errors.declarationAccepted ? '2px solid var(--danger)' : '1px solid var(--border-subtle)' }}>
+              <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: errors.declarationAccepted ? '2px solid #ef4444' : '1.5px solid #e2e8f0' }}>
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     name="declarationAccepted"
                     checked={!!customProfile.declarationAccepted}
                     onChange={(e) => setCustomProfile(prev => ({ ...prev, declarationAccepted: e.target.checked }))}
-                    style={{ width: '20px', height: '20px', marginTop: '4px' }}
+                    style={{ width: '20px', height: '20px', marginTop: '4px', accentColor: '#4f46e5' }}
                   />
-                  <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-                    <strong style={{ color: 'var(--text-primary)' }}>Student Declaration:</strong><br />
+                  <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: '#334155' }}>
+                    <strong style={{ color: '#0f172a' }}>Student Declaration:</strong><br />
                     I hereby do declare that all the details and documents which are mentioned above are true to best of my knowledge. I assure that, if I am admitted, I will abide by the rules and regulations of COTRTS-GO. I submit to the right of the Seminary administration to take any appropriate disciplinary action against me, if, in their judgment, my behavior or character is contrary to the emphasis of the seminary.
                   </div>
                 </label>
                 {errors.declarationAccepted && (
-                  <p style={{ color: 'var(--danger)', fontSize: '0.85rem', margin: '0.5rem 0 0', fontWeight: 500 }}>
+                  <p style={{ color: '#ef4444', fontSize: '0.85rem', margin: '0.5rem 0 0', fontWeight: 500 }}>
                     {errors.declarationAccepted}
                   </p>
                 )}
@@ -582,7 +582,7 @@ export default function Register() {
             </section>
 
             {/* Submit Button */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
               <Button type="submit" loading={loading} style={{ minWidth: 200 }}>
                 Submit Application
               </Button>

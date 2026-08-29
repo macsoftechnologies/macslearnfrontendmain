@@ -35,7 +35,7 @@ export default function AuthShell({ eyebrow, title, subtitle, children, wide, fo
   }, [org?.name]);
 
   return (
-    <div className="auth-shell">
+    <div className="auth-shell" data-theme="light">
       <div className="auth-shell__side">
         <div className="auth-shell__brand" style={{ minHeight: '32px' }}>
           {!loading && (

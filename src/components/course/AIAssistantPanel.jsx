@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, BrainCircuit, BookOpen, Zap, ListChecks, X, CheckCircle, AlertCircle, ArrowLeft, RotateCcw, Copy, Check, Search, HelpCircle, Award, Trophy } from 'lucide-react';
+import { 
+  Sparkles, BrainCircuit, BookOpen, Zap, ListChecks, X, CheckCircle, 
+  AlertCircle, ArrowLeft, RotateCcw, Copy, Check, Search, HelpCircle, 
+  Award, Trophy, Volume2, VolumeX, Flame, Star, Loader2, Sparkle
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import client from '../../api/client';
 
@@ -17,6 +21,11 @@ export default function AIAssistantPanel({
 }) {
   const [activeView, setActiveView] = useState(null); // 'summary' | 'quiz' | 'simplify' | 'revision' | null
   const [copied, setCopied] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Mini-thinking transition state when clicking cards
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [switchTarget, setSwitchTarget] = useState('');
 
   // Quiz state
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
@@ -25,8 +34,7 @@ export default function AIAssistantPanel({
   const [quizScore, setQuizScore] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [userAnswers, setUserAnswers] = useState([]);
-  const [savingAttempt, setSavingAttempt] = useState(false);
-  const [savedAttemptResult, setSavedAttemptResult] = useState(null);
+  const [streak, setStreak] = useState(0);
 
   // Simplify topics search
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +45,9 @@ export default function AIAssistantPanel({
   useEffect(() => {
     if (!aiPanelOpen) {
       setActiveView(null);
+      setIsSwitching(false);
       resetQuiz();
+      stopSpeech();
     }
   }, [aiPanelOpen]);
 
@@ -48,6 +58,47 @@ export default function AIAssistantPanel({
   const backstory = Array.isArray(payload?.backstory) ? payload.backstory : [];
   const keyTakeaways = Array.isArray(payload?.key_takeaways) ? payload.key_takeaways : [];
   const latestAttempt = payload?.latest_attempt || null;
+
+  // Seamless holographic transition when opening cards
+  const handleOpenSection = (sectionKey) => {
+    setIsSwitching(true);
+    setSwitchTarget(sectionKey);
+    if (sectionKey === 'quiz') {
+      resetQuiz();
+    }
+    setTimeout(() => {
+      setActiveView(sectionKey);
+      setIsSwitching(false);
+    }, 750);
+  };
+
+  // Text-To-Speech
+  const toggleSpeech = (text) => {
+    if (!('speechSynthesis' in window)) {
+      toast.error('Text-to-speech not supported on this browser.');
+      return;
+    }
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+      setIsSpeaking(true);
+    }
+  };
+
+  const stopSpeech = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+  };
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -63,14 +114,19 @@ export default function AIAssistantPanel({
     setQuizScore(0);
     setQuizCompleted(false);
     setUserAnswers([]);
-    setSavedAttemptResult(null);
+    setStreak(0);
   };
 
   const handleRetakeWithNewQuestions = () => {
+    setIsSwitching(true);
+    setSwitchTarget('quiz');
     resetQuiz();
     if (onRefreshAiData) {
       onRefreshAiData();
     }
+    setTimeout(() => {
+      setIsSwitching(false);
+    }, 800);
   };
 
   const handleSelectOption = (idx) => {
@@ -82,7 +138,11 @@ export default function AIAssistantPanel({
     const isCorrect = idx === currentQ.correct_index;
     if (isCorrect) {
       setQuizScore(s => s + 1);
+      setStreak(st => st + 1);
+    } else {
+      setStreak(0);
     }
+
     setUserAnswers(prev => [
       ...prev, 
       { 
@@ -100,22 +160,14 @@ export default function AIAssistantPanel({
       setIsAnswered(false);
     } else {
       setQuizCompleted(true);
-      // Save 5-question attempt to Database
       const lessonId = activeLesson?.id || activeLesson?._id;
       if (courseId && lessonId) {
-        setSavingAttempt(true);
         try {
-          const res = await client.post(`/courses/${courseId}/content/lessons/${lessonId}/ai-quiz/submit`, {
+          await client.post(`/courses/${courseId}/content/lessons/${lessonId}/ai-quiz/submit`, {
             answers: userAnswers
           });
-          if (res.data) {
-            setSavedAttemptResult(res.data);
-            toast.success('Quiz attempt recorded in database!');
-          }
         } catch (err) {
-          console.warn('Could not save quiz attempt to database', err);
-        } finally {
-          setSavingAttempt(false);
+          console.warn('Could not save quiz attempt', err);
         }
       }
     }
@@ -133,249 +185,256 @@ export default function AIAssistantPanel({
   if (!aiPanelOpen) return null;
 
   return (
-    <div className="ai-overlay" style={{ zIndex: 9999 }}>
-      <div className="ai-panel" style={{ width: '90vw', maxWidth: '850px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="ai-overlay-cinematic" style={{ zIndex: 9999 }}>
+      <div className="ai-panel-cinematic">
         {/* Header */}
-        <div className="ai-panel__header" style={{ borderBottom: '1px solid var(--border-subtle, #e2e8f0)', padding: '16px 24px' }}>
-          <div className="ai-panel__header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {activeView ? (
+        <div className="ai-header-cinematic">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            {activeView && !isSwitching ? (
               <button 
-                onClick={() => setActiveView(null)} 
-                style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onClick={() => { setActiveView(null); stopSpeech(); }} 
+                className="ai-back-btn"
                 title="Back to AI Hub"
               >
-                <ArrowLeft size={18} color="#475569" />
+                <ArrowLeft size={18} />
               </button>
             ) : (
-              <div className="ai-panel__icon-wrap">
-                <Sparkles size={18} />
+              <div className="ai-icon-sparkle">
+                <Sparkles size={20} color="#fff" />
               </div>
             )}
             <div>
-              <h3 className="ai-panel__title" style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>
-                {activeView === 'summary' && '📖 Lesson Summary'}
-                {activeView === 'quiz' && '🎯 Auto-Generated Interactive Quiz (5 Random Qs)'}
-                {activeView === 'simplify' && '⚡ Simplify Topics & Terminology'}
-                {activeView === 'revision' && '✨ Quick Revision Points'}
-                {!activeView && 'AI Study Assistant'}
-              </h3>
-              <p className="ai-panel__subtitle" style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
-                {activeLesson?.title || 'Lesson Analysis'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                  {activeView === 'summary' && '📖 Lesson Narrative Synthesis'}
+                  {activeView === 'quiz' && '🎯 Knowledge Challenge (5 Random Qs)'}
+                  {activeView === 'simplify' && '⚡ Concept & Terminology Simplified'}
+                  {activeView === 'revision' && '✨ Quick Revision Anchors'}
+                  {!activeView && 'Sacred AI Study Companion'}
+                </h3>
+                <span className="ai-live-badge">Live AI</span>
+              </div>
+              <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0' }}>
+                {activeLesson?.title || 'Academic Video Intelligence'}
               </p>
             </div>
           </div>
-          <button className="ai-panel__close" onClick={onClose} style={{ cursor: 'pointer' }}>
-            <X size={18} />
+          <button className="ai-close-btn" onClick={() => { stopSpeech(); onClose(); }}>
+            <X size={20} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="ai-panel__body" style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
+        {/* Body Content */}
+        <div className="ai-body-cinematic">
           {isThinking ? (
-            <div className="ai-thinking">
-              <div className="ai-thinking__brain-ring">
-                <div className="ai-thinking__brain-core">
-                  <BrainCircuit size={40} />
+            /* ---- INITIAL FULL NEURAL SYNTHESIS ANIMATION ---- */
+            <div className="ai-synthesis-box">
+              <div className="ai-neural-ring">
+                <div className="ai-neural-core">
+                  <BrainCircuit size={48} className="ai-pulse-icon" />
                 </div>
-                <svg className="ai-thinking__ring-svg" viewBox="0 0 120 120">
-                  <circle className="ai-thinking__ring-track" cx="60" cy="60" r="54" />
-                  <circle className="ai-thinking__ring-progress" cx="60" cy="60" r="54" />
-                </svg>
+                <div className="ai-ring-orbit" />
+                <div className="ai-ring-orbit ai-ring-orbit--2" />
               </div>
 
-              <div className="ai-thinking__phases">
-                <p className={`ai-thinking__phase ${thinkingPhase >= 0 ? 'ai-thinking__phase--active' : ''} ${thinkingPhase > 0 ? 'ai-thinking__phase--done' : ''}`}>
-                  <span className="ai-thinking__phase-dot" />
-                  <BrainCircuit size={14} /> Fetching AI question bank from database...
-                </p>
-                <p className={`ai-thinking__phase ${thinkingPhase >= 1 ? 'ai-thinking__phase--active' : ''} ${thinkingPhase > 1 ? 'ai-thinking__phase--done' : ''}`}>
-                  <span className="ai-thinking__phase-dot" />
-                  <BookOpen size={14} /> Loading full lesson narrative summary...
-                </p>
-                <p className={`ai-thinking__phase ${thinkingPhase >= 2 ? 'ai-thinking__phase--active' : ''} ${thinkingPhase > 2 ? 'ai-thinking__phase--done' : ''}`}>
-                  <span className="ai-thinking__phase-dot" />
-                  <Zap size={14} /> Sampling 5 randomized practice questions for student...
-                </p>
-                <p className={`ai-thinking__phase ${thinkingPhase >= 3 ? 'ai-thinking__phase--active' : ''}`}>
-                  <span className="ai-thinking__phase-dot" />
-                  <ListChecks size={14} /> Preparing study assistant hub...
-                </p>
+              <div className="ai-synthesis-text-wrap">
+                <h3 className="ai-synthesis-title">Neural Engine Synthesizing Lecture...</h3>
+                <p className="ai-synthesis-sub">Scanning video audio tracks, theological transcripts & generating study package</p>
+              </div>
+
+              <div className="ai-phases-stream">
+                <div className={`ai-stream-row ${thinkingPhase >= 0 ? 'ai-stream-row--active' : ''} ${thinkingPhase > 0 ? 'ai-stream-row--done' : ''}`}>
+                  <div className="ai-stream-dot" />
+                  <BrainCircuit size={15} />
+                  <span>Scanning lecture video & audio waveform patterns</span>
+                  {thinkingPhase > 0 && <Check size={14} className="ai-check-green" />}
+                </div>
+                <div className={`ai-stream-row ${thinkingPhase >= 1 ? 'ai-stream-row--active' : ''} ${thinkingPhase > 1 ? 'ai-stream-row--done' : ''}`}>
+                  <div className="ai-stream-dot" />
+                  <BookOpen size={15} />
+                  <span>Synthesizing comprehensive theological narrative</span>
+                  {thinkingPhase > 1 && <Check size={14} className="ai-check-green" />}
+                </div>
+                <div className={`ai-stream-row ${thinkingPhase >= 2 ? 'ai-stream-row--active' : ''} ${thinkingPhase > 2 ? 'ai-stream-row--done' : ''}`}>
+                  <div className="ai-stream-dot" />
+                  <Zap size={15} />
+                  <span>Sampling 5 randomized questions from {totalPoolCount}-question bank</span>
+                  {thinkingPhase > 2 && <Check size={14} className="ai-check-green" />}
+                </div>
+                <div className={`ai-stream-row ${thinkingPhase >= 3 ? 'ai-stream-row--active' : ''}`}>
+                  <div className="ai-stream-dot" />
+                  <ListChecks size={15} />
+                  <span>Formulating memory anchors & plain-language analogies</span>
+                </div>
               </div>
             </div>
+          ) : isSwitching ? (
+            /* ---- SWIRLING HOLOGRAPHIC TRANSITION WHEN CLICKING ANY CARD ---- */
+            <div className="ai-mini-swirl-box">
+              <div className="ai-swirl-loader">
+                <div className="ai-swirl-core">
+                  <Sparkles size={32} className="ai-swirl-sparkle" />
+                </div>
+                <div className="ai-swirl-vortex" />
+                <div className="ai-swirl-vortex ai-swirl-vortex--outer" />
+              </div>
+              <h4 className="ai-swirl-title">
+                {switchTarget === 'summary' && 'Synthesizing Narrative & Audio Streams...'}
+                {switchTarget === 'quiz' && 'Compiling 5 Randomized Challenge Questions...'}
+                {switchTarget === 'simplify' && 'Unpacking Theological Concepts & Analogies...'}
+                {switchTarget === 'revision' && 'Constructing High-Yield Revision Anchors...'}
+              </h4>
+              <p className="ai-swirl-sub">One-Touch AI formatting intelligence for this lecture</p>
+            </div>
           ) : showAI && !activeView ? (
-            /* ---- 4 MAIN CARDS HUB ---- */
-            <div className="ai-results">
+            /* ---- 4 MAIN INTERACTIVE CARDS HUB ---- */
+            <div className="ai-hub-container">
               {latestAttempt && (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '12px 18px', marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Trophy size={20} color="#16a34a" />
+                <div className="ai-attempt-banner">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="ai-trophy-badge">
+                      <Trophy size={18} color="#15803d" />
+                    </div>
                     <div>
-                      <strong style={{ fontSize: '13px', color: '#15803d' }}>Last Assessment Score:</strong>
-                      <span style={{ fontSize: '13px', color: '#166534', marginLeft: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#15803d' }}>
+                        Your Previous Quiz Score:
+                      </span>
+                      <span style={{ fontSize: '14px', fontWeight: 900, color: '#166534', marginLeft: '6px' }}>
                         {latestAttempt.score} / {latestAttempt.totalQuestions} ({latestAttempt.percentage}%)
                       </span>
                     </div>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    Completed on {new Date(latestAttempt.completedAt).toLocaleDateString()}
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    Saved on {new Date(latestAttempt.completedAt).toLocaleDateString()}
                   </span>
                 </div>
               )}
 
-              <div className="ai-results__grid">
+              <div className="ai-hub-grid">
                 {/* Card 1: Summary */}
-                <div 
-                  className="ai-card ai-card--1" 
-                  onClick={() => setActiveView('summary')}
-                  style={{ animationDelay: '0s', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div className="ai-card__icon" style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}>
-                      <BookOpen size={20} color="#fff" />
+                <div className="ai-hub-card ai-hub-card--purple" onClick={() => handleOpenSection('summary')}>
+                  <div className="ai-card-top">
+                    <div className="ai-card-iconwrap ai-card-iconwrap--purple">
+                      <BookOpen size={22} color="#fff" />
                     </div>
-                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#f3e8ff', color: '#7c3aed' }}>
-                      Complete Breakdown
-                    </span>
+                    <span className="ai-card-pill ai-card-pill--purple">Full Synthesis</span>
                   </div>
-                  <div className="ai-card__content">
-                    <h4 className="ai-card__title">Lesson Summary</h4>
-                    <p className="ai-card__desc">
-                      {summary.slice(0, 130)}...
-                    </p>
-                    <button className="ai-card__action" style={{ color: '#7c3aed', marginTop: '8px', fontWeight: 700 }}>
-                      View Summary →
-                    </button>
-                  </div>
+                  <h4 className="ai-card-heading">Lesson Summary</h4>
+                  <p className="ai-card-snippet">{summary.slice(0, 120)}...</p>
+                  <button className="ai-card-btn ai-card-btn--purple">
+                    View Summary & Listen →
+                  </button>
                 </div>
 
-                {/* Card 2: Quizzes (5 Random Qs) */}
-                <div 
-                  className="ai-card ai-card--2" 
-                  onClick={() => { resetQuiz(); setActiveView('quiz'); }}
-                  style={{ animationDelay: '0.15s', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div className="ai-card__icon" style={{ background: 'linear-gradient(135deg, #3b82f6, #60a5fa)' }}>
-                      <ListChecks size={20} color="#fff" />
+                {/* Card 2: 5-Q Quiz */}
+                <div className="ai-hub-card ai-hub-card--blue" onClick={() => handleOpenSection('quiz')}>
+                  <div className="ai-card-top">
+                    <div className="ai-card-iconwrap ai-card-iconwrap--blue">
+                      <ListChecks size={22} color="#fff" />
                     </div>
-                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb' }}>
-                      5 Random Questions
-                    </span>
+                    <span className="ai-card-pill ai-card-pill--blue">5 Random Qs</span>
                   </div>
-                  <div className="ai-card__content">
-                    <h4 className="ai-card__title">Auto-Generated Quiz</h4>
-                    <p className="ai-card__desc">
-                      5 randomized questions sampled from the {totalPoolCount}-question bank. Answers and scores are saved to your profile.
-                    </p>
-                    <button className="ai-card__action" style={{ color: '#3b82f6', marginTop: '8px', fontWeight: 700 }}>
-                      Take 5-Q Quiz →
-                    </button>
-                  </div>
+                  <h4 className="ai-card-heading">Knowledge Challenge</h4>
+                  <p className="ai-card-snippet">5 questions randomly sampled from the {totalPoolCount}-question bank. Live scoring & explanations.</p>
+                  <button className="ai-card-btn ai-card-btn--blue">
+                    Take 5-Q Challenge →
+                  </button>
                 </div>
 
                 {/* Card 3: Simplify Topics */}
-                <div 
-                  className="ai-card ai-card--3" 
-                  onClick={() => setActiveView('simplify')}
-                  style={{ animationDelay: '0.3s', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div className="ai-card__icon" style={{ background: 'linear-gradient(135deg, #10b981, #34d399)' }}>
-                      <Zap size={20} color="#fff" />
+                <div className="ai-hub-card ai-hub-card--emerald" onClick={() => handleOpenSection('simplify')}>
+                  <div className="ai-card-top">
+                    <div className="ai-card-iconwrap ai-card-iconwrap--emerald">
+                      <Zap size={22} color="#fff" />
                     </div>
-                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#ecfdf5', color: '#059669' }}>
-                      {backstory.length} Concepts
-                    </span>
+                    <span className="ai-card-pill ai-card-pill--emerald">{backstory.length} Concepts</span>
                   </div>
-                  <div className="ai-card__content">
-                    <h4 className="ai-card__title">Simplify Topics</h4>
-                    <p className="ai-card__desc">
-                      Complex theological terms, historical context, and terminology explained with plain language and analogies.
-                    </p>
-                    <button className="ai-card__action" style={{ color: '#10b981', marginTop: '8px', fontWeight: 700 }}>
-                      Simplify ({backstory.length} Topics) →
-                    </button>
-                  </div>
+                  <h4 className="ai-card-heading">Simplify Topics</h4>
+                  <p className="ai-card-snippet">Complex theological terms and Greek roots explained with plain-language analogies.</p>
+                  <button className="ai-card-btn ai-card-btn--emerald">
+                    Explore Concepts →
+                  </button>
                 </div>
 
-                {/* Card 4: Revision */}
-                <div 
-                  className="ai-card ai-card--4" 
-                  onClick={() => setActiveView('revision')}
-                  style={{ animationDelay: '0.45s', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div className="ai-card__icon" style={{ background: 'linear-gradient(135deg, #f59e0b, #fbbf24)' }}>
-                      <Sparkles size={20} color="#fff" />
+                {/* Card 4: Quick Revision */}
+                <div className="ai-hub-card ai-hub-card--amber" onClick={() => handleOpenSection('revision')}>
+                  <div className="ai-card-top">
+                    <div className="ai-card-iconwrap ai-card-iconwrap--amber">
+                      <Sparkles size={22} color="#fff" />
                     </div>
-                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#fffbeb', color: '#d97706' }}>
-                      {keyTakeaways.length} Key Points
-                    </span>
+                    <span className="ai-card-pill ai-card-pill--amber">{keyTakeaways.length} Key Points</span>
                   </div>
-                  <div className="ai-card__content">
-                    <h4 className="ai-card__title">Quick Revision</h4>
-                    <p className="ai-card__desc">
-                      High-yield revision checklist and memory anchors ready to review and tick off before exams.
-                    </p>
-                    <button className="ai-card__action" style={{ color: '#f59e0b', marginTop: '8px', fontWeight: 700 }}>
-                      View Points ({keyTakeaways.length} Points) →
-                    </button>
-                  </div>
+                  <h4 className="ai-card-heading">Quick Revision</h4>
+                  <p className="ai-card-snippet">High-yield revision checklist and memory anchors to tick off before exams.</p>
+                  <button className="ai-card-btn ai-card-btn--amber">
+                    Open Checklist →
+                  </button>
                 </div>
               </div>
             </div>
           ) : activeView === 'summary' ? (
-            /* ---- VIEW 1: SUMMARY ---- */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>
-                  Complete AI Narrative & Synthesis
-                </span>
-                <button 
-                  onClick={() => handleCopy(summary)} 
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: '1px solid #c7d2fe', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer' }}
-                >
-                  {copied ? <Check size={14} /> : <Copy size={14} />}
+            /* ---- VIEW 1: SUMMARY WITH TTS & COPY ---- */
+            <div className="ai-view-container ai-fade-in-up">
+              <div className="ai-toolbar">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button 
+                    onClick={() => toggleSpeech(summary)} 
+                    className={`ai-tool-btn ${isSpeaking ? 'ai-tool-btn--active' : ''}`}
+                  >
+                    {isSpeaking ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                    {isSpeaking ? 'Pause Audio' : 'Listen with Audio'}
+                  </button>
+                </div>
+                <button onClick={() => handleCopy(summary)} className="ai-tool-btn">
+                  {copied ? <Check size={15} /> : <Copy size={15} />}
                   {copied ? 'Copied' : 'Copy Summary'}
                 </button>
               </div>
 
-              <div style={{ fontSize: '15px', lineHeight: 1.8, color: '#334155', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', whiteSpace: 'pre-line' }}>
-                {summary}
+              <div className="ai-narrative-card">
+                <div className="ai-narrative-content">
+                  {summary}
+                </div>
               </div>
             </div>
           ) : activeView === 'quiz' ? (
-            /* ---- VIEW 2: INTERACTIVE QUIZ (5 QUESTIONS WITH DB STORAGE) ---- */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            /* ---- VIEW 2: 5-QUESTION GAMIFIED QUIZ ARENA ---- */
+            <div className="ai-view-container ai-fade-in-up">
               {quizPool.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                  <HelpCircle size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                  <p>No quiz questions generated for this video yet.</p>
+                <div style={{ textAlign: 'center', padding: '50px', color: '#94a3b8' }}>
+                  <HelpCircle size={44} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+                  <p>No quiz questions available for this lecture.</p>
                 </div>
               ) : quizCompleted ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                    <Award size={36} />
+                <div className="ai-quiz-finish-card">
+                  <div className="ai-celebration-trophy">
+                    <Award size={48} color="#16a34a" />
                   </div>
-                  <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>Quiz Completed!</h3>
-                  <p style={{ fontSize: '15px', color: '#64748b', margin: '0 0 8px' }}>
-                    You scored <strong style={{ color: '#16a34a', fontSize: '18px' }}>{quizScore}</strong> out of <strong style={{ fontSize: '18px' }}>{quizPool.length}</strong> ({Math.round((quizScore / quizPool.length) * 100)}%)
+                  <h3 style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', margin: '0 0 6px' }}>
+                    Challenge Complete!
+                  </h3>
+                  <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', margin: '0 0 16px' }}>
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        size={22} 
+                        fill={i < quizScore ? '#f59e0b' : '#e2e8f0'} 
+                        color={i < quizScore ? '#f59e0b' : '#cbd5e1'} 
+                      />
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '16px', color: '#475569', margin: '0 0 12px' }}>
+                    Score: <strong style={{ color: '#16a34a', fontSize: '20px' }}>{quizScore}</strong> out of <strong style={{ fontSize: '20px' }}>{quizPool.length}</strong> ({Math.round((quizScore / quizPool.length) * 100)}%)
                   </p>
-                  <p style={{ fontSize: '12px', color: '#15803d', fontWeight: 600, margin: '0 0 24px' }}>
-                    ✅ Attempt saved to your academic database records.
-                  </p>
+                  <div className="ai-db-saved-tag">
+                    <CheckCircle size={15} /> Saved to student academic records in database
+                  </div>
 
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <button 
-                      onClick={handleRetakeWithNewQuestions} 
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      <RotateCcw size={16} /> Retake with 5 New Questions
+                  <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', marginTop: '24px', flexWrap: 'wrap' }}>
+                    <button onClick={handleRetakeWithNewQuestions} className="ai-primary-btn">
+                      <RotateCcw size={16} /> Challenge 5 New Questions
                     </button>
-                    <button 
-                      onClick={() => setActiveView(null)} 
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
-                    >
+                    <button onClick={() => setActiveView(null)} className="ai-secondary-btn">
                       Back to AI Hub
                     </button>
                   </div>
@@ -387,53 +446,41 @@ export default function AIAssistantPanel({
 
                   return (
                     <div>
-                      {/* Quiz Progress Header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#4f46e5' }}>
-                          Question {currentQuizIndex + 1} of {quizPool.length} (Random Sample)
-                        </span>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
-                          Current Score: {quizScore}
-                        </span>
+                      {/* Progress HUD */}
+                      <div className="ai-quiz-hud">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="ai-hud-step">Question {currentQuizIndex + 1} of {quizPool.length}</span>
+                          {streak >= 2 && (
+                            <span className="ai-streak-pill">
+                              <Flame size={13} fill="#f59e0b" color="#f59e0b" /> {streak} Streak!
+                            </span>
+                          )}
+                        </div>
+                        <div className="ai-hud-score">
+                          Score: <strong style={{ color: '#4f46e5' }}>{quizScore}</strong>
+                        </div>
                       </div>
-                      <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', marginBottom: '20px' }}>
-                        <div style={{ width: `${progressPct}%`, height: '100%', background: '#4f46e5', transition: 'width 0.3s ease' }} />
-                      </div>
-
-                      {/* Question Box */}
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px', marginBottom: '16px' }}>
-                        <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', margin: 0, lineHeight: 1.5 }}>
-                          {q.question}
-                        </h4>
+                      <div className="ai-quiz-progressbar">
+                        <div className="ai-quiz-progressbar-fill" style={{ width: `${progressPct}%` }} />
                       </div>
 
-                      {/* Options */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {/* Question Text Box */}
+                      <div className="ai-question-card">
+                        <h4 className="ai-question-title">{q.question}</h4>
+                      </div>
+
+                      {/* Option Cards */}
+                      <div className="ai-options-grid">
                         {q.options?.map((opt, oIdx) => {
                           const isSelected = selectedOption === oIdx;
                           const isCorrect = oIdx === q.correct_index;
-                          
-                          let bg = '#ffffff';
-                          let border = '#e2e8f0';
-                          let color = '#334155';
-                          let icon = null;
 
+                          let stateClass = '';
                           if (isAnswered) {
-                            if (isCorrect) {
-                              bg = '#f0fdf4';
-                              border = '#86efac';
-                              color = '#15803d';
-                              icon = <CheckCircle size={18} color="#16a34a" />;
-                            } else if (isSelected) {
-                              bg = '#fef2f2';
-                              border = '#fca5a5';
-                              color = '#b91c1c';
-                              icon = <AlertCircle size={18} color="#dc2626" />;
-                            }
+                            if (isCorrect) stateClass = 'ai-opt--correct';
+                            else if (isSelected) stateClass = 'ai-opt--wrong';
                           } else if (isSelected) {
-                            bg = '#eef2ff';
-                            border = '#818cf8';
-                            color = '#4338ca';
+                            stateClass = 'ai-opt--selected';
                           }
 
                           return (
@@ -441,65 +488,32 @@ export default function AIAssistantPanel({
                               key={oIdx}
                               onClick={() => handleSelectOption(oIdx)}
                               disabled={isAnswered}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '14px 18px',
-                                borderRadius: '10px',
-                                background: bg,
-                                border: `1.5px solid ${border}`,
-                                color: color,
-                                fontSize: '14px',
-                                fontWeight: isSelected || (isAnswered && isCorrect) ? 700 : 500,
-                                textAlign: 'left',
-                                cursor: isAnswered ? 'default' : 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
+                              className={`ai-opt-btn ${stateClass}`}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: isSelected || (isAnswered && isCorrect) ? 'currentColor' : '#f1f5f9', color: isSelected || (isAnswered && isCorrect) ? '#fff' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>
-                                  {String.fromCharCode(65 + oIdx)}
-                                </span>
-                                <span>{opt}</span>
+                                <span className="ai-opt-letter">{String.fromCharCode(65 + oIdx)}</span>
+                                <span style={{ fontSize: '14px', lineHeight: 1.4 }}>{opt}</span>
                               </div>
-                              {icon}
+                              {isAnswered && isCorrect && <CheckCircle size={18} color="#16a34a" />}
+                              {isAnswered && isSelected && !isCorrect && <AlertCircle size={18} color="#dc2626" />}
                             </button>
                           );
                         })}
                       </div>
 
-                      {/* Explanation & Next */}
+                      {/* Explanation Unfolding */}
                       {isAnswered && (
-                        <div style={{ marginTop: '16px', animation: 'ai-card-in 0.3s ease' }}>
-                          <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
-                            <strong style={{ fontSize: '13px', color: '#0f172a', display: 'block', marginBottom: '4px' }}>
-                              💡 Explanation:
-                            </strong>
-                            <p style={{ fontSize: '13px', color: '#475569', margin: 0, lineHeight: 1.5 }}>
-                              {q.explanation || 'Based directly on the lecture discussion.'}
-                            </p>
+                        <div className="ai-explanation-box">
+                          <div className="ai-explanation-header">
+                            <Sparkles size={16} color="#4f46e5" />
+                            <strong>AI Theological Explanation:</strong>
                           </div>
+                          <p className="ai-explanation-text">
+                            {q.explanation || 'Verified with lecture syllabus.'}
+                          </p>
 
-                          <button
-                            onClick={handleNextQuestion}
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              background: '#4f46e5',
-                              color: '#ffffff',
-                              border: 'none',
-                              borderRadius: '8px',
-                              fontWeight: 700,
-                              fontSize: '14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {currentQuizIndex < quizPool.length - 1 ? 'Next Question →' : 'Finish Quiz & Save to Records 🎉'}
+                          <button onClick={handleNextQuestion} className="ai-next-btn">
+                            {currentQuizIndex < quizPool.length - 1 ? 'Next Question →' : 'Complete Challenge & Save 🎉'}
                           </button>
                         </div>
                       )}
@@ -509,101 +523,69 @@ export default function AIAssistantPanel({
               )}
             </div>
           ) : activeView === 'simplify' ? (
-            /* ---- VIEW 3: SIMPLIFY TOPICS (BACKSTORY) ---- */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ position: 'relative' }}>
-                <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+            /* ---- VIEW 3: SIMPLIFY TOPICS DECK ---- */
+            <div className="ai-view-container ai-fade-in-up">
+              <div className="ai-search-bar">
+                <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '12px' }} />
                 <input
                   type="text"
-                  placeholder="Search topics (e.g. Historia, Clement, Reformation)..."
+                  placeholder="Search concepts & terms (e.g. Historia, Clement, Pastoral Care)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px 10px 36px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '14px',
-                    outline: 'none',
-                  }}
+                  className="ai-search-input"
                 />
               </div>
 
               {filteredBackstory.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
-                  No matching topics found.
+                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  No matching terms found.
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="ai-concepts-grid">
                   {filteredBackstory.map((item, idx) => (
-                    <div 
-                      key={idx}
-                      style={{
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '12px',
-                        padding: '16px 20px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                        <h4 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                          {item.topic}
-                        </h4>
+                    <div key={idx} className="ai-concept-card">
+                      <div className="ai-concept-badge">
+                        <span className="ai-concept-dot" />
+                        <h4 className="ai-concept-title">{item.topic}</h4>
                       </div>
-                      <p style={{ fontSize: '14px', color: '#475569', lineHeight: 1.6, margin: 0 }}>
-                        {item.explanation}
-                      </p>
+                      <p className="ai-concept-explanation">{item.explanation}</p>
                     </div>
                   ))}
                 </div>
               )}
             </div>
           ) : activeView === 'revision' ? (
-            /* ---- VIEW 4: QUICK REVISION (KEY TAKEAWAYS) ---- */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fffbeb', padding: '12px 16px', borderRadius: '10px', border: '1px solid #fde68a' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#b45309' }}>
-                  🎯 Memory Anchors for Exam Prep ({Object.values(checkedTakeaways).filter(Boolean).length}/{keyTakeaways.length} Revised)
+            /* ---- VIEW 4: QUICK REVISION CHECKLIST ---- */
+            <div className="ai-view-container ai-fade-in-up">
+              <div className="ai-toolbar ai-toolbar--amber">
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#b45309' }}>
+                  🎯 Memory Progress: {Object.values(checkedTakeaways).filter(Boolean).length} / {keyTakeaways.length} Revised
                 </span>
                 <button 
                   onClick={() => handleCopy(keyTakeaways.map((t, i) => `${i+1}. ${t}`).join('\n'))} 
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#d97706', background: '#fff', border: '1px solid #fcd34d', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer' }}
+                  className="ai-tool-btn ai-tool-btn--amber"
                 >
                   {copied ? <Check size={14} /> : <Copy size={14} />}
                   {copied ? 'Copied' : 'Copy All Points'}
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="ai-takeaways-list">
                 {keyTakeaways.map((point, idx) => {
                   const isChecked = !!checkedTakeaways[idx];
                   return (
                     <div 
                       key={idx}
                       onClick={() => toggleTakeaway(idx)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '12px',
-                        padding: '14px 16px',
-                        background: isChecked ? '#f8fafc' : '#ffffff',
-                        border: `1px solid ${isChecked ? '#cbd5e1' : '#e2e8f0'}`,
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
+                      className={`ai-takeaway-item ${isChecked ? 'ai-takeaway-item--checked' : ''}`}
                     >
                       <input 
                         type="checkbox" 
                         checked={isChecked} 
                         onChange={() => {}} 
-                        style={{ marginTop: '3px', cursor: 'pointer', width: '16px', height: '16px', accentColor: '#d97706' }} 
+                        className="ai-checkbox-amber"
                       />
-                      <span style={{ fontSize: '14px', color: isChecked ? '#94a3b8' : '#1e293b', textDecoration: isChecked ? 'line-through' : 'none', lineHeight: 1.5 }}>
-                        {point}
-                      </span>
+                      <span className="ai-takeaway-text">{point}</span>
                     </div>
                   );
                 })}
@@ -630,10 +612,10 @@ export function AIFab({ activeTab, activeLesson, showAI, isThinking, onOpen }) {
         <Sparkles size={20} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', lineHeight: 1.1 }}>
-        <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#fbbf24' }}>
+        <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#fbbf24' }}>
           One Touch
         </span>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
+        <span style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>
           AI Assistant
         </span>
       </div>
