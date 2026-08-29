@@ -102,7 +102,9 @@ export default function StudentProfile() {
   const { profile, enrollments, examResults, stats } = data;
 
   const toggleCourse = async (enrollmentId, targetCourseId) => {
-    const courseId = targetCourseId || enrollmentId;
+    const courseId = (typeof targetCourseId === 'object' && targetCourseId !== null) 
+      ? (targetCourseId.id || targetCourseId._id) 
+      : (targetCourseId || enrollmentId);
     const isExpanding = expandedCourseId !== enrollmentId;
     setExpandedCourseId(isExpanding ? enrollmentId : null);
     
@@ -650,7 +652,7 @@ export default function StudentProfile() {
                                         </div>
                                       )}
                                       <button 
-                                        onClick={(e) => { e.stopPropagation(); toggleCourse(enrollment.id, enrollment.courseId); }}
+                                        onClick={(e) => { e.stopPropagation(); toggleCourse(enrollment.id, actualCourseId); }}
                                         style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
                                       >
                                         {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -775,18 +777,18 @@ export default function StudentProfile() {
                                           <h4 style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, marginBottom: 'var(--sp-4)' }} className="row">
                                             <PlayCircle size={14} style={{ marginRight: 6 }} /> Detailed Lessons List
                                           </h4>
-                                          {lessonsLoading[enrollment.courseId] ? (
+                                          {lessonsLoading[actualCourseId] ? (
                                             <div style={{ padding: 'var(--sp-4)', textAlign: 'center' }}><PageLoader /></div>
-                                          ) : lessonsMap[enrollment.courseId]?.modules?.length > 0 ? (
+                                          ) : lessonsMap[actualCourseId]?.modules?.length > 0 ? (
                                             <div className="stack" style={{ gap: 'var(--sp-4)' }}>
-                                              {lessonsMap[enrollment.courseId].modules.map(module => (
+                                              {lessonsMap[actualCourseId].modules.map(module => (
                                                 <div key={module.id || module._id} style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
                                                   <div style={{ backgroundColor: '#f1f5f9', padding: 'var(--sp-2) var(--sp-3)', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
                                                     {module.title}
                                                   </div>
                                                   <div className="stack">
                                                     {(module.lessons || []).map(lesson => {
-                                                      const isDone = lessonsMap[enrollment.courseId].completedMap.has(lesson.id || lesson._id);
+                                                      const isDone = lessonsMap[actualCourseId].completedMap.has(lesson.id || lesson._id);
                                                       return (
                                                         <div key={lesson.id || lesson._id} className="row" style={{ padding: 'var(--sp-2) var(--sp-3)', borderTop: '1px solid var(--border)', fontSize: 'var(--fs-sm)', justifyContent: 'space-between' }}>
                                                           <span className="row" style={{ color: isDone ? 'var(--text)' : 'var(--text-muted)' }}>

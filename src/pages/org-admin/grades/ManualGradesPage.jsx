@@ -41,7 +41,7 @@ const ManualGradesPage = () => {
     programsApi.list().then(res => setPrograms(res?.data || res || [])).catch(() => {});
     academicBatchesApi.list().then(res => setBatches(res?.data || res || [])).catch(() => {});
     semestersApi.list().then(res => setSemesters(res?.data || res || [])).catch(() => {});
-    coursesApi.list().then(res => setCourses(res?.data?.data || res?.data || [])).catch(() => {});
+    coursesApi.list({ limit: 200 }).then(res => setCourses(res?.data?.data || res?.data || [])).catch(() => {});
   }, []);
 
 
@@ -169,11 +169,32 @@ const ManualGradesPage = () => {
     ? semesters.filter(s => s.programId === programId)
     : (batchId && selectedBatch?.programId ? semesters.filter(s => s.programId === selectedBatch.programId) : semesters);
 
-  const filteredCourses = (programId && semesterId)
-    ? courses.filter(c => c.programId === programId && (!semesterId || c.semesterId === semesterId))
-    : programId
-    ? courses.filter(c => c.programId === programId)
-    : (selectedBatch?.programId ? courses.filter(c => c.programId === selectedBatch.programId) : courses);
+  const selectedSemester = semesters.find(s => s.id === semesterId || s._id === semesterId);
+  const semCourseIds = new Set(selectedSemester?.courseIds || []);
+
+  const filteredCourses = courses.filter(c => {
+    const cId = c.id || c._id;
+    // If semester selected, match semester.courseIds OR c.semesterId
+    if (semesterId) {
+      if (semCourseIds.has(cId) || c.semesterId === semesterId) return true;
+      return false;
+    }
+    // If program selected, match programId OR any semester in that program
+    if (programId) {
+      if (c.programId === programId || (Array.isArray(c.programIds) && c.programIds.includes(programId))) return true;
+      const progSems = semesters.filter(s => s.programId === programId);
+      const progCourseIds = new Set(progSems.flatMap(s => s.courseIds || []));
+      if (progCourseIds.has(cId)) return true;
+      return false;
+    }
+    // If batch selected
+    if (selectedBatch?.programId) {
+      const progSems = semesters.filter(s => s.programId === selectedBatch.programId);
+      const progCourseIds = new Set(progSems.flatMap(s => s.courseIds || []));
+      if (c.programId === selectedBatch.programId || progCourseIds.has(cId)) return true;
+    }
+    return true;
+  });
 
   const totalStudents = students.length;
   const gradedList = students.filter(s => s.isGraded);
