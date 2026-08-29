@@ -336,16 +336,21 @@ export default function CoursePlayer() {
     const isVideo = activeLesson && (activeLesson.type === 'VIDEO' || !!activeLesson.videoUrl);
     if (!isVideo || !courseId || !lessonId) {
       setHasAiData(false);
+      setAiData(null);
       return;
     }
     client.get(`/courses/${courseId}/content/lessons/${lessonId}/ai-data`)
       .then((res) => {
         const payload = res.data?.data?.data || res.data?.data || res.data;
-        const exists = !!(payload && (payload.summary || payload.quizPool?.length > 0 || payload.keyTakeaways?.length > 0 || payload.transcript));
-        setHasAiData(exists);
-        if (exists) setAiData(payload);
+        const hasData = !!(payload && (payload.summary || (Array.isArray(payload.quizPool) && payload.quizPool.length > 0) || (Array.isArray(payload.keyTakeaways) && payload.keyTakeaways.length > 0) || (Array.isArray(payload.backstory) && payload.backstory.length > 0) || payload.transcript));
+        setHasAiData(hasData);
+        if (hasData) setAiData(payload);
+        else setAiData(null);
       })
-      .catch(() => setHasAiData(false));
+      .catch(() => {
+        setHasAiData(false);
+        setAiData(null);
+      });
   }, [activeLesson, courseId]);
 
   // Refs
