@@ -329,6 +329,24 @@ export default function CoursePlayer() {
   const [thinkingPhase, setThinkingPhase] = useState(0);
   const [aiData, setAiData] = useState(null);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [hasAiData, setHasAiData] = useState(false);
+
+  useEffect(() => {
+    const lessonId = activeLesson?.id || activeLesson?._id;
+    const isVideo = activeLesson && (activeLesson.type === 'VIDEO' || !!activeLesson.videoUrl);
+    if (!isVideo || !courseId || !lessonId) {
+      setHasAiData(false);
+      return;
+    }
+    client.get(`/courses/${courseId}/content/lessons/${lessonId}/ai-data`)
+      .then((res) => {
+        const payload = res.data?.data?.data || res.data?.data || res.data;
+        const exists = !!(payload && (payload.summary || payload.quizPool?.length > 0 || payload.keyTakeaways?.length > 0 || payload.transcript));
+        setHasAiData(exists);
+        if (exists) setAiData(payload);
+      })
+      .catch(() => setHasAiData(false));
+  }, [activeLesson, courseId]);
 
   // Refs
   const lastSavedTimeRef = useRef(0);
@@ -961,6 +979,7 @@ export default function CoursePlayer() {
           showAI={showAI}
           isThinking={isThinking}
           onOpen={openAI}
+          hasAiData={hasAiData}
         />
 
         <AIAssistantPanel

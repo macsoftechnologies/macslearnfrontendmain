@@ -598,8 +598,8 @@ export default function AIAssistantPanel({
   );
 }
 
-export function AIFab({ activeTab, activeLesson, showAI, isThinking, onOpen }) {
-  if (activeTab !== 'lessons' || !activeLesson || showAI || isThinking) return null;
+export function AIFab({ activeTab, activeLesson, showAI, isThinking, onOpen, hasAiData }) {
+  if (activeTab !== 'lessons' || !activeLesson || showAI || isThinking || !hasAiData) return null;
 
   return (
     <button 
