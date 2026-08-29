@@ -543,7 +543,8 @@ export default function StudentProfile() {
                       columns={[
                         { key: 'course', header: 'Course Name', render: (r) => <span style={{ fontWeight: 600 }}>{r.courseTitle || r.course?.title || '—'}</span> },
                         { key: 'credits', header: 'Credit Earned', render: (r) => Number(r.course?.credits || 0).toFixed(0) },
-                        { key: 'assignment', header: 'Internal Assessment (70)', render: (r) => r.grade ? `${r.grade.assignmentScore ?? '—'} / 70` : '—' },
+                        { key: 'assignment', header: 'CIA (65)', render: (r) => r.grade ? `${r.grade.assignmentScore ?? '—'} / 65` : '—' },
+                        { key: 'attendance', header: 'Attendance (5)', render: (r) => r.grade ? `${r.grade.attendanceScore ?? 5} / 5` : '—' },
                         { key: 'exam', header: 'Final Exam (30)', render: (r) => r.grade ? `${r.grade.finalExamScore ?? '—'} / 30` : '—' },
                         { key: 'marks', header: 'Marks (100)', render: (r) => r.grade ? <strong>{r.grade.totalScore ?? '—'}</strong> : '—' },
                         { key: 'grade', header: 'Grade', render: (r) => r.grade?.grade ? <StatusBadge status={r.grade.grade === 'F' ? 'FAILED' : 'SUCCESS'} label={r.grade.grade} /> : <span className="text-muted">—</span> },
@@ -770,10 +771,14 @@ export default function StudentProfile() {
                                                 </div>
 
                                                 <div style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-3)', backgroundColor: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd' }}>
-                                                  <h5 style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: '#0369a1', marginBottom: 'var(--sp-2)' }}>70/30 Composite Assessment Marks</h5>
+                                                  <h5 style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: '#0369a1', marginBottom: 'var(--sp-2)' }}>65 / 5 / 30 Academic Grade Weightage</h5>
                                                   <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', marginBottom: 4 }}>
-                                                    <span>Automated Assessment (70%):</span>
-                                                    <strong style={{ color: '#0369a1' }}>{autoAssessment70} / 70</strong>
+                                                    <span>Internal Continuous Assessment (65%):</span>
+                                                    <strong style={{ color: '#4f46e5' }}>{enrollment.grade?.assignmentScore ?? (vqTotalCount > 0 ? Math.round((vqPassedCount / vqTotalCount) * 65 * 100) / 100 : 0)} / 65</strong>
+                                                  </div>
+                                                  <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', marginBottom: 4 }}>
+                                                    <span>Live Session Attendance (5%):</span>
+                                                    <strong style={{ color: '#059669' }}>{enrollment.grade?.attendanceScore ?? 5} / 5</strong>
                                                   </div>
                                                   <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', marginBottom: 4 }}>
                                                     <span>Course Final Exam (30%):</span>

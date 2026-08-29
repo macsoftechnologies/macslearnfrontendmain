@@ -77,7 +77,7 @@ const ManualGradesPage = () => {
   };
 
   const handleGradeChange = (id, field, value) => {
-    const maxLimit = field === 'assignmentScore' ? 70 : 30;
+    const maxLimit = field === 'assignmentScore' ? 65 : field === 'attendanceScore' ? 5 : 30;
     const numVal = Math.min(maxLimit, Math.max(0, Number(value) || 0));
     setStudents(students.map(s => s.studentId === id ? { ...s, [field]: numVal } : s));
   };
@@ -95,10 +95,11 @@ const ManualGradesPage = () => {
     return 'F';
   };
 
-  const calculateTotal = (assignment, exam) => {
-    const a = Number(assignment) || 0;
-    const e = Number(exam) || 0;
-    return Math.min(100, Math.round((a + e) * 100) / 100);
+  const calculateTotal = (internal65, attendance5, final30) => {
+    const i = Number(internal65) || 0;
+    const a = Number(attendance5) || 0;
+    const f = Number(final30) || 0;
+    return Math.min(100, Math.round((i + a + f) * 100) / 100);
   };
 
   // Save a single student's grade
@@ -110,6 +111,7 @@ const ManualGradesPage = () => {
       const payload = [{
         studentId: student.studentId,
         assignmentScore: Number(student.assignmentScore) || 0,
+        attendanceScore: Number(student.attendanceScore) || 0,
         finalExamScore: Number(student.finalExamScore) || 0
       }];
       await manualGradesApi.saveGrades(batchId, sem, courseId, payload);
@@ -142,6 +144,7 @@ const ManualGradesPage = () => {
       const payload = selectedStudents.map(s => ({
         studentId: s.studentId,
         assignmentScore: Number(s.assignmentScore) || 0,
+        attendanceScore: Number(s.attendanceScore) || 0,
         finalExamScore: Number(s.finalExamScore) || 0
       }));
       
@@ -245,9 +248,9 @@ const ManualGradesPage = () => {
       <div className="page-head">
         <div>
           <span className="page-eyebrow">Grading Management</span>
-          <h1 className="page-title">Grade Entry (70/30 Formula)</h1>
+          <h1 className="page-title">Grade Entry (65 / 5 / 30 Formula)</h1>
           <p className="page-subtitle">
-            Grade students individually as they complete exams, or select multiple to save together.
+            Continuous Internal Assessment (65%) + Attendance (5%) + Final Exam (30%) = 100% Total Composite Grade.
           </p>
         </div>
         {selectedIds.size > 0 && (
@@ -418,42 +421,56 @@ const ManualGradesPage = () => {
             )
           },
           { 
-            key: 'assignment', 
-            header: `Automated Assessment (70%)${isOrgAdmin ? ' (Editable)' : ''}`, 
-            render: (r) => isOrgAdmin ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            key: 'internal', 
+            header: 'Internal CIA (65%)', 
+            render: (r) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input 
                   type="number" 
-                  max="70" 
+                  max="65" 
                   min="0"
                   value={r.assignmentScore ?? ''} 
                   onChange={(e) => handleGradeChange(r.studentId, 'assignmentScore', e.target.value)}
-                  style={{ width: '80px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', fontSize: '14px', fontWeight: 600, color: '#0f172a' }}
-                  placeholder="Max 70"
+                  style={{ width: '70px', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', fontSize: '13px', fontWeight: 700, color: '#4f46e5' }}
+                  placeholder="Max 65"
                 />
-                <span style={{ fontSize: '12px', color: '#64748b' }}>/ 70</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>/ 65</span>
               </div>
-            ) : (
-              <span style={{ fontWeight: 600, color: '#2563eb', background: '#eff6ff', padding: '4px 10px', borderRadius: '6px' }}>
-                {r.assignmentScore || 0} / 70
-              </span>
-            ) 
+            )
+          },
+          { 
+            key: 'attendance', 
+            header: 'Attendance (5%)', 
+            render: (r) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <input 
+                  type="number" 
+                  max="5" 
+                  min="0"
+                  value={r.attendanceScore ?? ''} 
+                  onChange={(e) => handleGradeChange(r.studentId, 'attendanceScore', e.target.value)}
+                  style={{ width: '60px', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', fontSize: '13px', fontWeight: 700, color: '#059669' }}
+                  placeholder="Max 5"
+                />
+                <span style={{ fontSize: '11px', color: '#64748b' }}>/ 5</span>
+              </div>
+            )
           },
           { 
             key: 'exam', 
-            header: 'Faculty Manual Entry (30%)', 
+            header: 'Final Exam (30%)', 
             render: (r) => (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input 
                   type="number" 
                   max="30" 
                   min="0"
                   value={r.finalExamScore ?? ''} 
                   onChange={(e) => handleGradeChange(r.studentId, 'finalExamScore', e.target.value)}
-                  style={{ width: '80px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', fontSize: '14px', fontWeight: 600, color: '#0f172a' }}
+                  style={{ width: '70px', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}
                   placeholder="Max 30"
                 />
-                <span style={{ fontSize: '12px', color: '#64748b' }}>/ 30</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>/ 30</span>
               </div>
             ) 
           },
@@ -461,7 +478,7 @@ const ManualGradesPage = () => {
             key: 'total', 
             header: 'Composite Total (100)', 
             render: (r) => {
-              const total = calculateTotal(r.assignmentScore, r.finalExamScore);
+              const total = calculateTotal(r.assignmentScore, r.attendanceScore, r.finalExamScore);
               const letter = calculateGradeLetter(total);
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
