@@ -72,29 +72,70 @@ export default function MyCourses() {
         />
       ) : (
         <div className="course-grid">
-          {enrollments.map((e) => (
-            <Link to={e.status === 'EXPIRED' ? '#' : `/student/my-courses/${e.courseId?._id || e.courseId?.id || e.courseId}/learn`} key={e._id || e.id} className="course-card" style={e.status === 'EXPIRED' ? { opacity: 0.7 } : {}}>
-              <div className="course-card__thumb" style={{ backgroundImage: e.courseId?.thumbnailUrl ? `url('${buildStaticUrl(e.courseId.thumbnailUrl)}')` : undefined, position: 'relative' }}>
-                {!e.courseId?.thumbnailUrl && <Library size={28} />}
-                {e.status === 'EXPIRED' && <span style={{ position: 'absolute', top: 8, right: 8, background: 'var(--danger)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: 'var(--fs-xs)', fontWeight: 'bold' }}>Expired</span>}
-              </div>
-              <div className="course-card__body">
-                <h3>{e.courseId?.title || 'Course'}</h3>
-                {e.expiresAt && <p className="text-muted" style={{ fontSize: 'var(--fs-xs)', marginBottom: 'var(--sp-2)' }}>Expires: {new Date(e.expiresAt).toLocaleDateString()}</p>}
-                <div className="course-card__progress">
-                  <div className="course-card__progress-bar"><span style={{ width: `${e.progressPercentage || 0}%` }} /></div>
-                  <span className="text-muted" style={{ fontSize: 'var(--fs-2xs)' }}>{e.progressPercentage || 0}% complete</span>
-                </div>
-                {e.grade && (
-                  <div style={{ marginTop: 'var(--sp-2)' }}>
-                    <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--color-primary-600)', background: 'var(--color-primary-50)', padding: '2px 6px', borderRadius: 4 }}>
-                      Grade: {e.grade.grade} ({e.grade.totalScore})
+          {enrollments.map((e) => {
+            const courseObj = (typeof e.courseId === 'object' && e.courseId !== null) ? e.courseId : (e.course || {});
+            const thumb = courseObj.thumbnailUrl || courseObj.thumbnail || e.thumbnailUrl;
+            const title = courseObj.title || e.courseTitle || 'Course';
+            const courseId = courseObj.id || courseObj._id || e.courseId;
+
+            return (
+              <Link 
+                to={e.status === 'EXPIRED' ? '#' : `/student/my-courses/${courseId}/learn`} 
+                key={e._id || e.id} 
+                className="course-card" 
+                style={e.status === 'EXPIRED' ? { opacity: 0.7 } : {}}
+              >
+                <div 
+                  className="course-card__thumb" 
+                  style={{ 
+                    aspectRatio: '16/9', 
+                    backgroundColor: '#0f172a', 
+                    position: 'relative', 
+                    overflow: 'hidden', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}
+                >
+                  {thumb ? (
+                    <img 
+                      src={buildStaticUrl(thumb)} 
+                      alt={title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                        display: 'block'
+                      }}
+                    />
+                  ) : (
+                    <Library size={36} color="#a5b4fc" />
+                  )}
+                  {e.status === 'EXPIRED' && (
+                    <span style={{ position: 'absolute', top: 8, right: 8, background: 'var(--danger, #ef4444)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                      Expired
                     </span>
+                  )}
+                </div>
+                <div className="course-card__body">
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--text-primary)' }}>{title}</h3>
+                  {e.expiresAt && <p className="text-muted" style={{ fontSize: 'var(--fs-xs)', marginBottom: 'var(--sp-2)' }}>Expires: {new Date(e.expiresAt).toLocaleDateString()}</p>}
+                  <div className="course-card__progress">
+                    <div className="course-card__progress-bar"><span style={{ width: `${e.progressPercentage || 0}%` }} /></div>
+                    <span className="text-muted" style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600 }}>{e.progressPercentage || 0}% complete</span>
                   </div>
-                )}
-              </div>
-            </Link>
-          ))}
+                  {e.grade && (
+                    <div style={{ marginTop: 'var(--sp-2)' }}>
+                      <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--color-primary-600)', background: 'var(--color-primary-50)', padding: '2px 6px', borderRadius: 4 }}>
+                        Grade: {e.grade.grade} ({e.grade.totalScore})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

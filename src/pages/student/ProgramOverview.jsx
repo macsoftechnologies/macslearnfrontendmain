@@ -491,8 +491,33 @@ export default function ProgramOverview() {
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  <div className="course-card__thumb" style={{ backgroundImage: (course.thumbnailUrl || course.thumbnail) ? `url('${buildStaticUrl(course.thumbnailUrl || course.thumbnail)}')` : undefined, backgroundColor: isAlreadyEnrolled ? '#22c55e' : isSelected ? 'var(--brand)' : 'var(--brand-surface)' }}>
-                    {!(course.thumbnailUrl || course.thumbnail) && <BookOpen size={48} color={(isSelected || isAlreadyEnrolled) ? '#fff' : 'var(--brand)'} />}
+                  <div 
+                    className="course-card__thumb" 
+                    style={{ 
+                      aspectRatio: '16/9', 
+                      backgroundColor: '#0f172a', 
+                      position: 'relative', 
+                      overflow: 'hidden', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}
+                  >
+                    {(course.thumbnailUrl || course.thumbnail) ? (
+                      <img 
+                        src={buildStaticUrl(course.thumbnailUrl || course.thumbnail)} 
+                        alt={course.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          objectPosition: 'center',
+                          display: 'block'
+                        }}
+                      />
+                    ) : (
+                      <BookOpen size={44} color="#a5b4fc" />
+                    )}
                   </div>
                   <div className="course-card__body">
                     <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
