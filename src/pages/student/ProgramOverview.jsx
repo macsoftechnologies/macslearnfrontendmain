@@ -5,6 +5,7 @@ import * as programsApi from '../../api/programs';
 import * as studentsApi from '../../api/students';
 import * as academicBatchesApi from '../../api/academicBatches';
 import * as coursesApi from '../../api/courses';
+import * as semestersApi from '../../api/semesters';
 import * as examsApi from '../../api/exams';
 import * as contentApi from '../../api/content';
 import client from '../../api/client';
@@ -34,17 +35,39 @@ export default function ProgramOverview() {
   const [selectedCourses, setSelectedCourses] = useState(new Set());
 
   const [coursesList, setCoursesList] = useState([]);
+  const [semestersList, setSemestersList] = useState([]);
+  const [selectedSemesterTab, setSelectedSemesterTab] = useState('');
 
   const fetchData = async () => {
     const userId = user?.id || user?._id;
     try {
-      const [progRes, batchRes, enrollRes, progEnrollRes, cRes] = await Promise.all([
+      const [progRes, batchRes, enrollRes, progEnrollRes, cRes, semRes] = await Promise.all([
         programsApi.getById(id),
         academicBatchesApi.list(id),
         userId ? studentsApi.getEnrollments(userId) : Promise.resolve({ data: { data: [] } }),
         userId ? studentsApi.getPrograms(userId) : Promise.resolve({ data: { data: [] } }),
-        coursesApi.list({ programId: id, limit: 100 })
+        coursesApi.list({ programId: id, limit: 100 }),
+        semestersApi.list({ programId: id })
       ]);
+      const sArr = semRes?.data || semRes || [];
+      const progSems = Array.isArray(sArr) ? sArr.filter(s => s.programId === id || !s.programId) : [];
+      
+      // Sort semesters chronologically: Semester 1, Semester 2, Semester 3...
+      progSems.sort((a, b) => {
+        const numA = parseInt((a.name || a.term || '').replace(/\D/g, '')) || 0;
+        const numB = parseInt((b.name || b.term || '').replace(/\D/g, '')) || 0;
+        return numA - numB;
+      });
+
+      setSemestersList(progSems);
+
+      // Default directly to student's active semester or Semester 1 (never show all 30 mixed together)
+      if (selectedSemesterTab === 'ALL' || !selectedSemesterTab) {
+        const defaultSem = progSems.find(s => s.id === user?.semesterId) || progSems[0];
+        if (defaultSem) {
+          setSelectedSemesterTab(defaultSem.id);
+        }
+      }
       setProgram(progRes.data || progRes);
       
       const bArr = batchRes?.data?.data || batchRes?.data || batchRes;
@@ -283,15 +306,116 @@ export default function ProgramOverview() {
       )}
 
       <div>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: 0 }}>Select Courses to Enroll</h2>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Academic Curriculum & Term Subjects</h2>
+            <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+              Select courses or enroll in your active term pack (5 subjects per term).
+            </p>
+          </div>
           {selectedCourses.size > 0 && (
-            <div className="row" style={{ gap: '1rem', alignItems: 'center', backgroundColor: 'var(--brand-surface)', padding: '0.5rem 1rem', borderRadius: '100px' }}>
-              <span style={{ fontWeight: 600, color: 'var(--brand)' }}>{selectedCourses.size} Selected</span>
-              <Button size="sm" onClick={() => setEnrollModalOpen(true)}>Proceed to Enroll</Button>
+            <div className="row" style={{ gap: '1rem', alignItems: 'center', backgroundColor: 'var(--brand-surface, #f5f3ff)', padding: '0.5rem 1.25rem', borderRadius: '100px', border: '1px solid var(--brand, #7c3aed)' }}>
+              <span style={{ fontWeight: 700, color: 'var(--brand, #7c3aed)', fontSize: '0.9rem' }}>{selectedCourses.size} Courses Selected</span>
+              <Button size="sm" onClick={() => setEnrollModalOpen(true)}>Proceed to Checkout</Button>
             </div>
           )}
         </div>
+
+        {/* Chronological Semester Tabs */}
+        {semestersList.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', paddingBottom: '0.75rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle, #e2e8f0)' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto' }}>
+              {semestersList.map((sem, sIdx) => {
+                const semCoursesCount = (sem.courseIds || []).length || coursesList.filter(c => c.semesterId === sem.id).length || 5;
+                const isTabActive = selectedSemesterTab === sem.id;
+                return (
+                  <button
+                    key={sem.id || sIdx}
+                    onClick={() => setSelectedSemesterTab(sem.id)}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '20px',
+                      fontSize: '0.88rem',
+                      fontWeight: isTabActive ? 700 : 600,
+                      background: isTabActive ? 'var(--brand, #7c3aed)' : '#f1f5f9',
+                      color: isTabActive ? '#ffffff' : 'var(--text-secondary, #475569)',
+                      border: isTabActive ? 'none' : '1px solid var(--border-subtle, #e2e8f0)',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s',
+                      boxShadow: isTabActive ? '0 2px 8px rgba(124, 58, 237, 0.25)' : 'none'
+                    }}
+                  >
+                    {(() => {
+                      const rawName = sem.name || sem.term || `Term ${sIdx + 1}`;
+                      const termFormatted = rawName.replace(/semester/i, 'Term');
+                      const isActiveTerm = sIdx === 0;
+                      return (
+                        <span>
+                          {isActiveTerm ? '🟢 ' : ''}{termFormatted} ({semCoursesCount} Subjects)
+                        </span>
+                      );
+                    })()}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Term Action / Lock Helper */}
+            {(() => {
+              const activeSem = semestersList.find(s => s.id === user?.semesterId) || semestersList[0];
+              const currentSem = semestersList.find(s => s.id === selectedSemesterTab) || semestersList[0];
+              if (!currentSem) return null;
+
+              const isCurrentActive = currentSem.id === activeSem?.id;
+
+              if (!isCurrentActive) {
+                return (
+                  <span style={{ background: '#fef3c7', color: '#92400e', padding: '6px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #fde68a' }}>
+                    🔒 Upcoming Term (Unlocks in Next Academic Cycle)
+                  </span>
+                );
+              }
+
+              const semCourseIds = (currentSem.courseIds && currentSem.courseIds.length > 0)
+                ? currentSem.courseIds
+                : coursesList.filter(c => c.semesterId === currentSem.id).map(c => c.id || c._id);
+              const unenrolledSemIds = semCourseIds.filter(cid => !enrolledCourseIds.has(cid));
+              if (unenrolledSemIds.length === 0) return null;
+
+              const allSelected = unenrolledSemIds.every(cid => selectedCourses.has(cid));
+
+              return (
+                <button
+                  onClick={() => {
+                    const newSet = new Set(selectedCourses);
+                    if (allSelected) {
+                      unenrolledSemIds.forEach(cid => newSet.delete(cid));
+                    } else {
+                      unenrolledSemIds.forEach(cid => newSet.add(cid));
+                    }
+                    setSelectedCourses(newSet);
+                  }}
+                  style={{
+                    background: '#eff6ff',
+                    color: '#2563eb',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  ✓ {allSelected ? 'Deselect Term Subjects' : `Select All ${unenrolledSemIds.length} Subjects in ${(currentSem.name || 'this Term').replace(/semester/i, 'Term')}`}
+                </button>
+              );
+            })()}
+          </div>
+        )}
         
         {coursesList.length === 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
@@ -299,7 +423,16 @@ export default function ProgramOverview() {
           </div>
         ) : (
           <div className="course-grid">
-            {coursesList.map(course => {
+            {coursesList
+              .filter(course => {
+                if (selectedSemesterTab === 'ALL') return true;
+                const sem = semestersList.find(s => s.id === selectedSemesterTab);
+                if (sem && Array.isArray(sem.courseIds)) {
+                  return sem.courseIds.includes(course.id || course._id);
+                }
+                return course.semesterId === selectedSemesterTab;
+              })
+              .map(course => {
               
               // Calculate price based on student's region
               let displayPrice = 'Free';
@@ -338,17 +471,23 @@ export default function ProgramOverview() {
                   className="course-card" 
                   onClick={() => {
                     if (isAlreadyEnrolled) return;
+                    const currentActiveSemId = (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id;
+                    const isFutureTerm = selectedSemesterTab && currentActiveSemId && selectedSemesterTab !== currentActiveSemId;
+                    if (isFutureTerm) {
+                      toast.error('This is an upcoming term. You can only enroll in the currently active term.');
+                      return;
+                    }
                     const newSet = new Set(selectedCourses);
                     if (isSelected) newSet.delete(courseId);
                     else newSet.add(courseId);
                     setSelectedCourses(newSet);
                   }} 
                   style={{ 
-                    cursor: isAlreadyEnrolled ? 'default' : 'pointer',
+                    cursor: isAlreadyEnrolled ? 'default' : (selectedSemesterTab !== (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id) ? 'not-allowed' : 'pointer',
                     border: isSelected ? '2px solid var(--brand)' : isAlreadyEnrolled ? '2px solid #22c55e' : undefined,
                     boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.08)' : undefined,
-                    backgroundColor: isAlreadyEnrolled ? '#f0fdf4' : undefined,
-                    opacity: isAlreadyEnrolled ? 0.9 : 1,
+                    backgroundColor: isAlreadyEnrolled ? '#f0fdf4' : (selectedSemesterTab !== (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id) ? '#f8fafc' : undefined,
+                    opacity: isAlreadyEnrolled ? 0.9 : (selectedSemesterTab !== (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id) ? 0.75 : 1,
                     transition: 'all 0.2s ease'
                   }}
                 >

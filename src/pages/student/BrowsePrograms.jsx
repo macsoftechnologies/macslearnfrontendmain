@@ -21,6 +21,10 @@ export default function BrowsePrograms() {
   const [enrolledProgramIds, setEnrolledProgramIds] = useState([]);
 
   useEffect(() => {
+    if (user?.programId) {
+      navigate(`/student/programs/${user.programId}`, { replace: true });
+      return;
+    }
     const userId = user?.id || user?._id;
     if (userId) {
       studentsApi.getEnrollments(userId).then(res => {
@@ -29,7 +33,7 @@ export default function BrowsePrograms() {
         setEnrolledProgramIds([...new Set(programIds)]);
       }).catch(() => {});
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const { items, page, setPage, meta, loading } = usePagination(
     programsApi.list, // Assuming list can take search params in future, or we just filter client-side if it doesn't support pagination

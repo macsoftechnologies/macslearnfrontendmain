@@ -60,7 +60,16 @@ export default function MyCourses() {
       </div>
 
       {enrollments.length === 0 ? (
-        <EmptyState icon={Library} title="No courses yet" description="Browse the catalog and enroll in your first course." action={<Link to="/student/courses"><Button size="sm">Browse Courses</Button></Link>} />
+        <EmptyState 
+          icon={Library} 
+          title="No courses yet" 
+          description="Browse your program curriculum and enroll in your first semester subjects." 
+          action={
+            <Link to={user?.programId ? `/student/programs/${user.programId}` : "/student/programs"}>
+              <Button size="sm">Browse Curriculum & Enroll</Button>
+            </Link>
+          } 
+        />
       ) : (
         <div className="course-grid">
           {enrollments.map((e) => (
