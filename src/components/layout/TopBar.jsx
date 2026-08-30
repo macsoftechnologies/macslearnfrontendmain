@@ -36,7 +36,8 @@ export default function TopBar({ onMenuClick, title }) {
           const inbox = chatRes.value?.data?.data || chatRes.value?.data || {};
           const dChats = Array.isArray(inbox.directChats) ? inbox.directChats : [];
           const bGroups = Array.isArray(inbox.batchGroups) ? inbox.batchGroups : [];
-          const allConvs = [...dChats, ...bGroups];
+          const cGroups = Array.isArray(inbox.courseGroups) ? inbox.courseGroups : [];
+          const allConvs = [...dChats, ...bGroups, ...cGroups];
 
           let readMap = {};
           try {
