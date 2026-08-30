@@ -2,21 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, Send, Users, User, Shield, Search, Plus, 
   Circle, CheckCheck, BookOpen, Clock, Smile, ChevronLeft,
-  Sparkles, RefreshCw, Paperclip, MessageCircle
+  Sparkles, RefreshCw, Paperclip, MessageCircle, UserPlus, FolderPlus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as discussionApi from '../../api/discussion';
+import * as academicBatchesApi from '../../api/academicBatches';
 import { useAuth } from '../../contexts/AuthContext';
 import { extractErrorMessages } from '../../api/client';
 import Button from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
-import Input, { Textarea } from '../../components/ui/Input';
+import Input, { Select, Textarea } from '../../components/ui/Input';
 import PageLoader from '../../components/ui/PageLoader';
 import './ChatHub.css';
 
 export default function ChatHub() {
   const { user } = useAuth();
+  const isStaff = user?.userType === 'ORG_USER' || user?.userType === 'FACULTY' || user?.userType === 'SUPER_ADMIN';
+
   const [inbox, setInbox] = useState({ directChats: [], batchGroups: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'GROUPS' | 'DIRECT' | 'STAFF'
@@ -34,11 +37,18 @@ export default function ChatHub() {
     } catch { return {}; }
   });
 
-  // New Chat Modal
+  // Direct Message Modal
   const [newChatModal, setNewChatModal] = useState(false);
   const [contacts, setContacts] = useState({ adminsAndFaculty: [], classmates: [] });
   const [contactSearch, setContactSearch] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
+
+  // Create Group Modal
+  const [newGroupModal, setNewGroupModal] = useState(false);
+  const [batches, setBatches] = useState([]);
+  const [selectedBatchId, setSelectedBatchId] = useState('');
+  const [groupTitle, setGroupTitle] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatScrollRef = useRef(null);
@@ -187,6 +197,47 @@ export default function ChatHub() {
     }
   };
 
+  const openCreateGroupModal = async () => {
+    setNewGroupModal(true);
+    setGroupTitle('');
+    setSelectedBatchId('');
+    try {
+      const res = await academicBatchesApi.list();
+      const bList = res.data?.data || res.data || [];
+      setBatches(Array.isArray(bList) ? bList : []);
+    } catch {}
+  };
+
+  const handleCreateGroup = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedBatchId && !groupTitle.trim()) {
+      toast.error('Please select a cohort batch or enter a group title');
+      return;
+    }
+    setCreatingGroup(true);
+    try {
+      const chosenBatch = batches.find(b => b.id === selectedBatchId);
+      const finalTitle = groupTitle.trim() || (chosenBatch ? `${chosenBatch.name} Discussion Group` : 'Cohort Group');
+      const res = await discussionApi.openBatchThread(selectedBatchId || null, finalTitle);
+      const thread = res.data?.data || res.data;
+      setNewGroupModal(false);
+      await loadInbox(true);
+      if (thread?.id) {
+        selectThread({
+          id: thread.id,
+          threadType: 'BATCH_GROUP',
+          batchId: thread.batchId || selectedBatchId,
+          title: thread.title || finalTitle,
+        });
+      }
+      toast.success(`Created group "${finalTitle}" successfully!`);
+    } catch (err) {
+      extractErrorMessages(err).forEach(m => toast.error(m));
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
   // Filter Conversations
   const allConversations = [
     ...inbox.batchGroups.map(g => ({ ...g, isGroup: true })),
@@ -235,13 +286,25 @@ export default function ChatHub() {
             Messages & Discussions
           </h1>
         </div>
-        <Button 
-          icon={Plus} 
-          onClick={openNewChat}
-          style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', color: '#fff', fontWeight: 700, boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)' }}
-        >
-          New Direct Message
-        </Button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {isStaff && (
+            <Button 
+              icon={Users} 
+              variant="outline"
+              onClick={openCreateGroupModal}
+              style={{ fontWeight: 700 }}
+            >
+              + Create Discussion Group
+            </Button>
+          )}
+          <Button 
+            icon={Plus} 
+            onClick={openNewChat}
+            style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', color: '#fff', fontWeight: 700, boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)' }}
+          >
+            New Direct Message
+          </Button>
+        </div>
       </div>
 
       {/* THEATER CONTAINER */}
@@ -300,7 +363,7 @@ export default function ChatHub() {
               <div style={{ padding: '3rem 1.25rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
                 <MessageCircle size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 8px' }} />
                 <p style={{ margin: 0, fontWeight: 600 }}>No conversations yet</p>
-                <p style={{ margin: '4px 0 0', fontSize: '0.78rem' }}>Click "+ New Direct Message" to connect!</p>
+                <p style={{ margin: '4px 0 0', fontSize: '0.78rem' }}>Click "+ New Direct Message" or "+ Create Group" to connect!</p>
               </div>
             ) : (
               filteredConversations.map((conv) => {
@@ -469,7 +532,7 @@ export default function ChatHub() {
                       flex: 1, 
                       borderRadius: '999px', 
                       padding: '0.75rem 1.25rem', 
-                      fontSize: '0.92rem'
+                      fontSize: '0.86rem'
                     }}
                   />
                   <Button 
@@ -478,7 +541,7 @@ export default function ChatHub() {
                     disabled={!inputMessage.trim() || sending} 
                     style={{ 
                       padding: '0 1.5rem', 
-                      height: '46px',
+                      height: '44px',
                       borderRadius: '999px',
                       background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', 
                       color: '#fff', 
@@ -503,17 +566,24 @@ export default function ChatHub() {
                 Your Communications Hub
               </h2>
               <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', maxWidth: '420px', margin: '0 auto 1.5rem' }}>
-                Select an active discussion from the left or click "+ New Direct Message" to start a new chat with instructors or peers.
+                Select an active discussion from the left or start a new conversation with instructors or peers.
               </p>
-              <Button onClick={openNewChat} style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', color: '#fff', fontWeight: 700 }}>
-                Start a New Conversation
-              </Button>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                {isStaff && (
+                  <Button variant="outline" onClick={openCreateGroupModal} style={{ fontWeight: 700 }}>
+                    + Create Discussion Group
+                  </Button>
+                )}
+                <Button onClick={openNewChat} style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', color: '#fff', fontWeight: 700 }}>
+                  Start Direct Message
+                </Button>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* NEW DIRECT MESSAGE MODAL */}
+      {/* MODAL 1: NEW DIRECT MESSAGE */}
       <Modal
         open={newChatModal}
         onClose={() => setNewChatModal(false)}
@@ -570,7 +640,7 @@ export default function ChatHub() {
                 {contacts.classmates.length > 0 && (
                   <div>
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      Cohort Classmates
+                      Cohort Classmates / Students
                     </div>
                     {contacts.classmates
                       .filter(c => c.fullName?.toLowerCase().includes(contactSearch.toLowerCase()) || c.email?.toLowerCase().includes(contactSearch.toLowerCase()))
@@ -600,6 +670,64 @@ export default function ChatHub() {
             )}
           </div>
         </div>
+      </Modal>
+
+      {/* MODAL 2: CREATE DISCUSSION GROUP */}
+      <Modal
+        open={newGroupModal}
+        onClose={() => setNewGroupModal(false)}
+        title="Create Cohort / Batch Discussion Group"
+      >
+        <form onSubmit={handleCreateGroup} className="stack" style={{ gap: '1.25rem' }}>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+              Select Academic Batch / Cohort
+            </label>
+            <Select 
+              value={selectedBatchId} 
+              onChange={(e) => {
+                setSelectedBatchId(e.target.value);
+                const b = batches.find(x => x.id === e.target.value);
+                if (b && !groupTitle) {
+                  setGroupTitle(`${b.name} Discussion Group`);
+                }
+              }}
+            >
+              <option value="">-- Choose a Cohort / Batch --</option>
+              {batches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+              Group Title / Name
+            </label>
+            <Input 
+              placeholder="e.g. Apr-Aug 2026 Batch Discussion"
+              value={groupTitle}
+              onChange={(e) => setGroupTitle(e.target.value)}
+              required
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '0.5rem' }}>
+            <Button variant="outline" type="button" onClick={() => setNewGroupModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="primary" 
+              disabled={creatingGroup || (!selectedBatchId && !groupTitle.trim())}
+              style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', color: '#fff', fontWeight: 800 }}
+            >
+              {creatingGroup ? 'Creating...' : 'Create Discussion Group'}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
