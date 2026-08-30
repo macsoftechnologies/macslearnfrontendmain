@@ -146,17 +146,17 @@ export default function StudentProfile() {
   };
 
   const handleDownloadTranscript = async () => {
-    const toastId = toast.loading('Generating transcript...');
+    const toastId = toast.loading('Generating official semester transcript...');
     try {
-      const blob = await transcriptsApi.generate(id);
-      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const blob = await transcriptsApi.generate(id, { conduct: 'Satisfactory', awards: 'None' });
+      const url = window.URL.createObjectURL(new Blob([blob?.data || blob], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `transcript-${profile.fullName || 'student'}.pdf`);
+      link.setAttribute('download', `official-transcript-${(profile.fullName || 'student').replace(/\s+/g, '_')}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
-      toast.success('Transcript downloaded', { id: toastId });
+      toast.success('Official transcript downloaded successfully!', { id: toastId });
     } catch (err) {
       console.error(err);
       toast.error('Failed to download transcript', { id: toastId });
@@ -218,7 +218,7 @@ export default function StudentProfile() {
         <ArrowLeft size={14} /> Back to students
       </Link>
 
-      <div className="page-head">
+      <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <span className="page-eyebrow">Student Profile</span>
           <div className="row">
@@ -226,6 +226,16 @@ export default function StudentProfile() {
             <StatusBadge status={profile.status || 'ACTIVE'} />
           </div>
           <p className="page-subtitle">{profile.email}</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Button
+            icon={FileDown}
+            variant="primary"
+            onClick={handleDownloadTranscript}
+            style={{ fontWeight: 700, background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', color: '#ffffff', boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)' }}
+          >
+            Download Official Transcript
+          </Button>
         </div>
       </div>
 
