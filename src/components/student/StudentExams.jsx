@@ -77,8 +77,10 @@ export default function StudentExams({ courseId }) {
             header: 'Attempts Used', 
             render: (r) => {
               const max = r.maxAttempts || 3;
-              const used = (attemptsMap[r._id || r.id] || []).length;
-              return `${used} / ${max}`;
+              const past = attemptsMap[r._id || r.id] || [];
+              const hasActive = past.some(a => a.status === 'IN_PROGRESS');
+              const used = past.filter(a => a.status !== 'IN_PROGRESS').length;
+              return hasActive ? `${used} / ${max} (In Progress)` : `${used} / ${max}`;
             } 
           },
           {
@@ -95,14 +97,22 @@ export default function StudentExams({ courseId }) {
             key: 'actions', header: 'Actions', render: (r) => {
               const pastAttempts = attemptsMap[r._id || r.id] || [];
               const max = r.maxAttempts || 3;
-              const used = pastAttempts.length;
+              const hasActiveAttempt = pastAttempts.some(a => a.status === 'IN_PROGRESS');
+              const completedAttempts = pastAttempts.filter(a => a.status !== 'IN_PROGRESS');
+              const used = completedAttempts.length;
               
               return (
                 <div className="row" style={{ gap: '8px' }}>
-                  {used < max && (
+                  {hasActiveAttempt ? (
+                    <Button size="sm" variant="primary" style={{ background: '#4f46e5', color: '#fff' }} onClick={() => navigate(`/student/my-courses/${courseId}/exams/${r._id || r.id}/take`)}>
+                      Resume Exam
+                    </Button>
+                  ) : used < max ? (
                     <Button size="sm" onClick={() => navigate(`/student/my-courses/${courseId}/exams/${r._id || r.id}/take`)}>
                       {used > 0 ? 'Retake Exam' : 'Take Exam'}
                     </Button>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Attempt Limit Reached</span>
                   )}
                 </div>
               );

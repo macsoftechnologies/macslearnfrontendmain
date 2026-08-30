@@ -216,20 +216,32 @@ export default function TakeExam() {
                   <div className="stack" style={{ gap: '8px' }}>
                     <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Upload File (PDF, Word DOC/DOCX, TXT)</label>
                     <FileUploader 
-                      accept=".pdf,.docx,.doc,.txt,.rtf,.jpg,.jpeg,.png"
-                      value={answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl || (typeof answers[questions[currentIndex]._id || questions[currentIndex].id] === 'string' ? answers[questions[currentIndex]._id || questions[currentIndex].id] : '')}
-                      onChange={(url, name) => {
+                      accept={{
+                        'application/pdf': ['.pdf'],
+                        'application/msword': ['.doc'],
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+                        'text/plain': ['.txt'],
+                        'image/*': ['.jpg', '.jpeg', '.png']
+                      }}
+                      preview={answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl}
+                      onUploaded={(url, file) => {
                         const qId = questions[currentIndex]._id || questions[currentIndex].id;
                         setAnswers(prev => ({
                           ...prev,
                           [qId]: {
                             ...(typeof prev[qId] === 'object' ? prev[qId] : {}),
                             fileUrl: url,
-                            fileName: name || 'Uploaded Document'
+                            fileName: file?.name || 'Uploaded Document'
                           }
                         }));
+                        toast.success('Document attached to question');
                       }}
                     />
+                    {answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl && (
+                      <div style={{ fontSize: '13px', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        ✓ File attached: <a href={answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl} target="_blank" rel="noreferrer" style={{ color: '#4f46e5', textDecoration: 'underline' }}>{answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileName || 'View Attachment'}</a>
+                      </div>
+                    )}
                   </div>
 
                   <div className="stack" style={{ gap: '8px' }}>

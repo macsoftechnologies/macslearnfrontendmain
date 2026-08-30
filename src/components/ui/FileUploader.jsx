@@ -54,7 +54,18 @@ export default function FileUploader({
     [maxSizeMB, onUploaded]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept, multiple: false });
+  let dropzoneAccept = accept;
+  if (typeof accept === 'string') {
+    dropzoneAccept = {
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'text/plain': ['.txt'],
+      'image/*': ['.jpg', '.jpeg', '.png', '.webp']
+    };
+  }
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: dropzoneAccept, multiple: false });
 
   if (renderCustom) {
     return renderCustom({ getRootProps, getInputProps, isDragActive, uploading, progress });
