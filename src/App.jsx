@@ -67,6 +67,7 @@ import GradingQueue from './pages/faculty/GradingQueue';
 import FacultyCourseHub from './pages/faculty/CourseHub';
 import ExamBuilder from './pages/faculty/ExamBuilder';
 import ExamResults from './pages/faculty/ExamResults';
+import ExamEvaluationsPage from './pages/shared/ExamEvaluationsPage';
 import FacultyExamAttemptReview from './pages/faculty/FacultyExamAttemptReview';
 import AssignmentSubmissions from './pages/faculty/AssignmentSubmissions';
 import VideoQuizManager from './pages/faculty/VideoQuizManager';
@@ -184,6 +185,7 @@ export default function App() {
               <Route path="/admin/batches" element={<BatchesPage />} />
               <Route path="/admin/semesters" element={<SemestersPage />} />
               <Route path="/admin/grades" element={<ManualGradesPage />} />
+              <Route path="/admin/exam-reviews" element={<ExamEvaluationsPage />} />
               <Route path="/admin/transcripts" element={<GenerateTranscriptPage />} />
               <Route path="/admin/dmin-evaluations" element={<DMinEvaluations />} />
               <Route path="/admin/courses" element={<Courses />} />
@@ -199,6 +201,7 @@ export default function App() {
               <Route path="/admin/courses/:id/lessons/:lessonId/video-quizzes" element={<VideoQuizManager />} />
               <Route path="/admin/courses/:id/exams/:examId" element={<ExamBuilder />} />
               <Route path="/admin/courses/:id/exams/:examId/results" element={<ExamResults />} />
+              <Route path="/admin/courses/:id/exams/:examId/attempts/:attemptId/review" element={<FacultyExamAttemptReview />} />
               <Route path="/admin/courses/:id/assignments/:assignmentId/submissions" element={<AssignmentSubmissions />} />
               <Route path="/admin/regions" element={<Regions />} />
               <Route path="/admin/enrollments" element={<Enrollments />} />
@@ -227,8 +230,11 @@ export default function App() {
             >
               <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
               <Route path="/faculty/grading-queue" element={<GradingQueue />} />
+              <Route path="/faculty/exam-reviews" element={<ExamEvaluationsPage />} />
               <Route path="/faculty/program-expiry" element={<ProgramExpiryReport userRole="FACULTY" />} />
               <Route path="/faculty/courses" element={<FacultyCourses />} />
+              <Route path="/faculty/live-sessions" element={<LiveSessions />} />
+              <Route path="/faculty/chat" element={<ChatHub />} />
               <Route path="/faculty/courses/create" element={<CourseForm />} />
               <Route path="/faculty/courses/:id/edit" element={<CourseForm />} />
               <Route path="/faculty/courses/:id" element={<FacultyCourseHub />} />
@@ -259,6 +265,8 @@ export default function App() {
               <Route path="/student/programs/:programId/courses/:id" element={<CourseOverview />} />
               <Route path="/student/courses/:id" element={<CourseOverview />} />
               <Route path="/student/my-courses" element={<MyCourses />} />
+              <Route path="/student/live-sessions" element={<StudentLiveSessions />} />
+              <Route path="/student/chat" element={<ChatHub />} />
               <Route path="/student/my-courses/:id/learn" element={<CoursePlayer />} />
               <Route path="/student/my-courses/:id/exams/:examId/take" element={<TakeExam />} />
               <Route path="/student/my-courses/:id/exams/:examId/attempts/:attemptId/review" element={<ExamAttemptReview />} />

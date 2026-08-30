@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, Eye, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../../components/ui/Button';
 import DataTable from '../../../components/ui/DataTable';
@@ -12,6 +13,7 @@ import * as programsApi from '../../../api/programs';
 import client from '../../../api/client';
 
 const BatchesPage = () => {
+  const navigate = useNavigate();
   const [batches, setBatches] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -216,8 +218,9 @@ const BatchesPage = () => {
           { key: 'endDate', header: 'End Date', render: (r) => r.endDate ? new Date(r.endDate).toLocaleDateString() : 'N/A' },
           {
             key: 'actions', header: 'Actions', render: (r) => (
-              <div className="row" style={{ gap: 6 }}>
+              <div className="row" style={{ gap: 6, alignItems: 'center' }}>
                 <Button size="sm" variant="outline" icon={Eye} onClick={() => openViewStudents(r)}>View</Button>
+
                 <Button size="sm" variant="outline" icon={Edit} onClick={() => openEdit(r)}>Edit</Button>
                 <Button size="sm" variant="outline" icon={Trash2} onClick={() => setDeleteTarget(r)} danger>Delete</Button>
               </div>

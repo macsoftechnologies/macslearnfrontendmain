@@ -100,19 +100,29 @@ export default function StudentExams({ courseId }) {
               const hasActiveAttempt = pastAttempts.some(a => a.status === 'IN_PROGRESS');
               const completedAttempts = pastAttempts.filter(a => a.status !== 'IN_PROGRESS');
               const used = completedAttempts.length;
+              const latestAttempt = completedAttempts[completedAttempts.length - 1] || pastAttempts[pastAttempts.length - 1];
               
               return (
-                <div className="row" style={{ gap: '8px' }}>
-                  {hasActiveAttempt ? (
+                <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
+                  {hasActiveAttempt && (
                     <Button size="sm" variant="primary" style={{ background: '#4f46e5', color: '#fff' }} onClick={() => navigate(`/student/my-courses/${courseId}/exams/${r._id || r.id}/take`)}>
                       Resume Exam
                     </Button>
-                  ) : used < max ? (
+                  )}
+                  {!hasActiveAttempt && used < max && (
                     <Button size="sm" onClick={() => navigate(`/student/my-courses/${courseId}/exams/${r._id || r.id}/take`)}>
                       {used > 0 ? 'Retake Exam' : 'Take Exam'}
                     </Button>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Attempt Limit Reached</span>
+                  )}
+                  {latestAttempt && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      icon={Eye} 
+                      onClick={() => navigate(`/student/my-courses/${courseId}/exams/${r._id || r.id}/attempts/${latestAttempt._id || latestAttempt.id}/review`)}
+                    >
+                      View Submission
+                    </Button>
                   )}
                 </div>
               );

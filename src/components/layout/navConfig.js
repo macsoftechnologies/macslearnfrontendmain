@@ -41,6 +41,7 @@ export const NAV = {
     { to: '/admin/program-expiry', label: 'Program Expiry', icon: Clock },
     { to: '/admin/approvals', label: 'Content Approvals', icon: FileCheck2, requiredPermissions: ['MANAGE_CONTENT', 'ALL'] },
     { to: '/admin/grades', label: 'Grades & Transcripts', icon: ScrollText },
+    { to: '/admin/exam-reviews', label: 'Review Exams', icon: FileCheck2 },
     { to: '/admin/dmin-evaluations', label: 'D.Min Evaluations', icon: Award },
     
     // Finance & Operations
@@ -57,6 +58,7 @@ export const NAV = {
     { to: '/faculty/live-sessions', label: 'Live Sessions & Attendance', icon: Video },
     { to: '/faculty/chat', label: 'Messages & Discussions', icon: MessageSquare },
     { to: '/faculty/grading-queue', label: 'Grading Queue', icon: ClipboardList },
+    { to: '/faculty/exam-reviews', label: 'Review Exams', icon: FileCheck2 },
     { to: '/faculty/program-expiry', label: 'Program Expiry', icon: Clock },
     { to: '/faculty/profile', label: 'Profile', icon: UserCircle },
   ],

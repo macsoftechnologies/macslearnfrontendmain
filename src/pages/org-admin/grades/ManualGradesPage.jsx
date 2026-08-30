@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Save, Search, Award, CheckCircle, Users, AlertCircle, Clock, CheckSquare, Square } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../../components/ui/Button';
@@ -16,6 +17,7 @@ import * as academicBatchesApi from '../../../api/academicBatches';
 import * as programsApi from '../../../api/programs';
 
 const ManualGradesPage = () => {
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const isOrgAdmin = user?.userType === 'ORG_USER' || user?.userType === 'SUPER_ADMIN';
 
@@ -39,10 +41,19 @@ const ManualGradesPage = () => {
 
   useEffect(() => {
     programsApi.list().then(res => setPrograms(res?.data || res || [])).catch(() => {});
-    academicBatchesApi.list().then(res => setBatches(res?.data || res || [])).catch(() => {});
+    academicBatchesApi.list().then(res => {
+      const bList = res?.data || res || [];
+      setBatches(bList);
+      const qBatch = searchParams.get('batchId');
+      const qProg = searchParams.get('programId');
+      const qCourse = searchParams.get('courseId');
+      if (qBatch) setBatchId(qBatch);
+      if (qProg) setProgramId(qProg);
+      if (qCourse) setCourseId(qCourse);
+    }).catch(() => {});
     semestersApi.list().then(res => setSemesters(res?.data || res || [])).catch(() => {});
     coursesApi.list({ limit: 200 }).then(res => setCourses(res?.data?.data || res?.data || [])).catch(() => {});
-  }, []);
+  }, [searchParams]);
 
 
   const handleLoad = async () => {

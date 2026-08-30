@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as examsApi from '../../api/exams';
+import { buildStaticUrl } from '../../api/client';
 import PageLoader from '../../components/ui/PageLoader';
 import { Card } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -40,7 +41,7 @@ export default function ExamAttemptReview() {
       if (q.correctAnswer && q.correctAnswer.toLowerCase() === (answer?.selectedOption || '').toLowerCase()) {
         computedMarksObtained += q.marks;
       }
-    } else if (q.type === 'SHORT_ANSWER') {
+    } else if (q.type === 'SHORT_ANSWER' || q.type === 'BOOK_REVIEW' || q.type === 'RESEARCH_PAPER') {
       computedMarksObtained += answer?.marks || 0;
     }
   });
@@ -49,8 +50,8 @@ export default function ExamAttemptReview() {
 
   return (
     <div className="page" style={{ maxWidth: '800px', margin: '0 auto', padding: 'var(--sp-8) var(--sp-6)' }}>
-      <Button variant="ghost" onClick={() => navigate(`/student/my-courses/${courseId}/learn`)} style={{ marginBottom: 'var(--sp-4)' }}>
-        &larr; Back to Course
+      <Button variant="ghost" onClick={() => window.history.length > 1 ? navigate(-1) : navigate(`/student/my-courses/${courseId}/learn`)} style={{ marginBottom: 'var(--sp-4)' }}>
+        &larr; Back
       </Button>
       
       <div style={{ marginBottom: 'var(--sp-6)' }}>
@@ -66,7 +67,8 @@ export default function ExamAttemptReview() {
 
       <div className="stack" style={{ gap: 'var(--sp-6)' }}>
         {questions.map((q, i) => {
-          const answer = attempt.answers.find(a => a.questionId === (q._id || q.id));
+          const rawAnswers = Array.isArray(attempt.answers) ? attempt.answers : (typeof attempt.answers === 'string' ? JSON.parse(attempt.answers || '[]') : []);
+          const answer = rawAnswers.find(a => String(a.questionId) === String(q._id || q.id));
           
           let dynamicIsCorrect = false;
           let dynamicMarks = answer?.marks || 0;
@@ -82,8 +84,8 @@ export default function ExamAttemptReview() {
               dynamicIsCorrect = true;
               dynamicMarks = q.marks;
             }
-          } else if (q.type === 'SHORT_ANSWER') {
-            dynamicIsCorrect = answer?.isCorrect || false;
+          } else if (q.type === 'SHORT_ANSWER' || q.type === 'BOOK_REVIEW' || q.type === 'RESEARCH_PAPER') {
+            dynamicIsCorrect = (answer?.marks || 0) > 0;
             dynamicMarks = answer?.marks || 0;
           }
 
@@ -98,7 +100,7 @@ export default function ExamAttemptReview() {
                 </span>
               </div>
               
-              <div style={{ fontSize: 'var(--fs-md)', marginBottom: 'var(--sp-4)' }}>{q.text}</div>
+              <div style={{ fontSize: 'var(--fs-md)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--sp-4)', lineHeight: 1.5 }}>{q.questionText || q.text || 'Question Prompt'}</div>
 
               {q.type === 'MCQ' && (
                 <div className="stack" style={{ gap: '12px' }}>
@@ -150,6 +152,79 @@ export default function ExamAttemptReview() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {(q.type === 'BOOK_REVIEW' || q.type === 'RESEARCH_PAPER') && (
+                <div className="stack" style={{ gap: '14px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', padding: '4px 8px', borderRadius: '4px', background: '#e0e7ff', color: '#4338ca' }}>
+                      {q.type === 'BOOK_REVIEW' ? '📖 Book Review Submission' : '📄 Research Paper Submission'}
+                    </span>
+                    {answer?.isGraded === false || answer?.marks === undefined ? (
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '4px' }}>
+                        ⏳ Pending Faculty Review
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '2px 8px', borderRadius: '4px' }}>
+                        ✓ Evaluated: {answer.marks} / {q.marks} Marks
+                      </span>
+                    )}
+                  </div>
+
+                  {answer?.fileUrl && (
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: '#ffffff', 
+                      borderRadius: '8px', 
+                      border: '1px solid #cbd5e1', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '16px' }}>📎</span>
+                        <div>
+                          <strong style={{ fontSize: '13px', color: '#0f172a' }}>{answer.fileName || 'Submitted Document'}</strong>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>Uploaded for examination</div>
+                        </div>
+                      </div>
+                      <a 
+                        href={buildStaticUrl(answer.fileUrl)} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        style={{ 
+                          padding: '6px 14px', 
+                          background: '#4f46e5', 
+                          color: '#ffffff', 
+                          borderRadius: '6px', 
+                          fontSize: '12px', 
+                          fontWeight: 700, 
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        👁️ View Uploaded File
+                      </a>
+                    </div>
+                  )}
+
+                  <div>
+                    <strong style={{ fontSize: '13px', color: '#334155' }}>Your Written Abstract / Summary:</strong>
+                    <div style={{ padding: '12px', background: '#ffffff', borderRadius: '6px', border: '1px solid #cbd5e1', marginTop: '6px', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
+                      {answer?.textAnswer || (typeof answer?.selectedOption === 'string' && !answer.selectedOption.startsWith('http') ? answer.selectedOption : '') || <em>No written commentary provided</em>}
+                    </div>
+                  </div>
+
+                  {answer?.feedback && (
+                    <div style={{ padding: '10px 14px', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe', fontSize: '13px', color: '#1e40af' }}>
+                      💬 <strong>Faculty Feedback:</strong> {answer.feedback}
+                    </div>
+                  )}
                 </div>
               )}
 

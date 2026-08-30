@@ -1,6 +1,8 @@
 ﻿import { useState, useEffect } from 'react';
 import { Popover } from '@headlessui/react';
-import { Menu, ChevronDown, LogOut, UserCircle, KeyRound, Sun, Moon } from 'lucide-react';
+import { Menu, ChevronDown, LogOut, UserCircle, KeyRound, Sun, Moon, Video, MessageSquare } from 'lucide-react';
+import * as liveSessionsApi from '../../api/liveSessions';
+import * as discussionApi from '../../api/discussion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import NotificationBell from '../notifications/NotificationBell';
@@ -15,6 +17,36 @@ export default function TopBar({ onMenuClick, title }) {
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('app-theme') || 'light');
+  const [liveCount, setLiveCount] = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+
+  const fetchHeaderCounts = async () => {
+    try {
+      if (['ORG_USER', 'FACULTY', 'STUDENT'].includes(role)) {
+        const [liveRes, chatRes] = await Promise.allSettled([
+          liveSessionsApi.list({ status: 'SCHEDULED' }),
+          discussionApi.getInbox()
+        ]);
+
+        if (liveRes.status === 'fulfilled') {
+          const lData = liveRes.value?.data?.data || liveRes.value?.data || [];
+          setLiveCount(Array.isArray(lData) ? lData.length : 0);
+        }
+        if (chatRes.status === 'fulfilled') {
+          const inbox = chatRes.value?.data?.data || chatRes.value?.data || {};
+          const dChats = Array.isArray(inbox.directChats) ? inbox.directChats.length : 0;
+          const bGroups = Array.isArray(inbox.batchGroups) ? inbox.batchGroups.length : 0;
+          setUnreadMsgCount(dChats + bGroups);
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchHeaderCounts();
+    const interval = setInterval(fetchHeaderCounts, 30000);
+    return () => clearInterval(interval);
+  }, [role]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -47,6 +79,40 @@ export default function TopBar({ onMenuClick, title }) {
       </div>
 
       <div className="topbar__right">
+        {['ORG_USER', 'FACULTY', 'STUDENT'].includes(role) && (
+          <>
+            {/* Live Sessions Header Button */}
+            <button
+              className="topbar__header-btn"
+              onClick={() => navigate(`/${ROLE_PATH[role]}/live-sessions`)}
+              title="Live Sessions & Schedule"
+              aria-label="Live Sessions"
+            >
+              <Video size={18} />
+              {liveCount > 0 && (
+                <span className="topbar__header-badge topbar__header-badge--live">
+                  {liveCount > 99 ? '99+' : liveCount}
+                </span>
+              )}
+            </button>
+
+            {/* Messages Header Button */}
+            <button
+              className="topbar__header-btn"
+              onClick={() => navigate(`/${ROLE_PATH[role]}/chat`)}
+              title="Messages & Discussions"
+              aria-label="Messages"
+            >
+              <MessageSquare size={18} />
+              {unreadMsgCount > 0 && (
+                <span className="topbar__header-badge topbar__header-badge--chat">
+                  {unreadMsgCount > 99 ? '99+' : unreadMsgCount}
+                </span>
+              )}
+            </button>
+          </>
+        )}
+
         <button 
           className="topbar__theme-toggle" 
           onClick={toggleTheme}

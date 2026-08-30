@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as examsApi from '../../api/exams';
-import { extractErrorMessages } from '../../api/client';
+import { extractErrorMessages, buildStaticUrl } from '../../api/client';
 import Button from '../../components/ui/Button';
 import PageLoader from '../../components/ui/PageLoader';
 import { Card } from '../../components/ui/Card';
@@ -216,6 +216,8 @@ export default function TakeExam() {
                   <div className="stack" style={{ gap: '8px' }}>
                     <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Upload File (PDF, Word DOC/DOCX, TXT)</label>
                     <FileUploader 
+                      folder="exams"
+                      maxSizeMB={25}
                       accept={{
                         'application/pdf': ['.pdf'],
                         'application/msword': ['.doc'],
@@ -238,8 +240,75 @@ export default function TakeExam() {
                       }}
                     />
                     {answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl && (
-                      <div style={{ fontSize: '13px', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        ✓ File attached: <a href={answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl} target="_blank" rel="noreferrer" style={{ color: '#4f46e5', textDecoration: 'underline' }}>{answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileName || 'View Attachment'}</a>
+                      <div style={{ 
+                        marginTop: '8px', 
+                        padding: '12px 16px', 
+                        background: '#f0fdf4', 
+                        borderRadius: '8px', 
+                        border: '1px solid #bbf7d0', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '10px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '18px' }}>📎</span>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#166534' }}>
+                              {answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileName || 'Uploaded Document'}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#15803d' }}>Ready for submission</div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <a 
+                            href={buildStaticUrl(answers[questions[currentIndex]._id || questions[currentIndex].id]?.fileUrl)} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            style={{ 
+                              padding: '6px 12px', 
+                              background: '#4f46e5', 
+                              color: '#ffffff', 
+                              borderRadius: '6px', 
+                              fontSize: '12px', 
+                              fontWeight: 600, 
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            👁️ View / Open File
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const qId = questions[currentIndex]._id || questions[currentIndex].id;
+                              setAnswers(prev => ({
+                                ...prev,
+                                [qId]: {
+                                  ...(typeof prev[qId] === 'object' ? prev[qId] : {}),
+                                  fileUrl: '',
+                                  fileName: ''
+                                }
+                              }));
+                            }}
+                            style={{
+                              padding: '6px 10px',
+                              background: '#fee2e2',
+                              color: '#991b1b',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ✕ Remove
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

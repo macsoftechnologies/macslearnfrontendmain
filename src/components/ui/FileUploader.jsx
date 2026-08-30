@@ -8,7 +8,8 @@ import './FileUploader.css';
 
 export default function FileUploader({
   accept,
-  maxSizeMB = 5,
+  maxSizeMB = 25,
+  folder = 'exams',
   onUploaded, // (url) => void
   preview, // existing preview url
   label = 'Drag & drop, or click to select a file',
@@ -41,7 +42,7 @@ export default function FileUploader({
       setUploading(true);
       setProgress(0);
       try {
-        const { data } = await uploadFile(file, setProgress, 'students', isPublic);
+        const { data } = await uploadFile(file, setProgress, folder || 'exams', isPublic);
         const url = data?.data?.url || data?.data?.path || data?.url;
         toast.success('File uploaded');
         onUploaded?.(url, file);

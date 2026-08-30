@@ -25,3 +25,5 @@ export const attemptReview = (examId, attemptId) =>
 export const gradeAnswer = (examId, attemptId, data) =>
   client.patch(`/exams/${examId}/attempts/${attemptId}/grade-answer`, data);
 export const publishResult = (resultId) => client.patch(`/results/${resultId}/publish`);
+
+export const allSubmissions = (params) => client.get('/all-submissions', { params });

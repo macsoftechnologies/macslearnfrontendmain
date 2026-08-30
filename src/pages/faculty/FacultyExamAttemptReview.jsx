@@ -5,9 +5,10 @@ import * as certificatesApi from '../../api/certificates';
 import PageLoader from '../../components/ui/PageLoader';
 import { Card } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import { FileText, Download, Eye, ExternalLink, Image as ImageIcon, CheckCircle, Clock } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import toast from 'react-hot-toast';
-import { extractErrorMessages } from '../../api/client';
+import { extractErrorMessages, buildStaticUrl } from '../../api/client';
 
 export default function FacultyExamAttemptReview() {
   const { id: courseId, examId, attemptId } = useParams();
@@ -92,8 +93,8 @@ export default function FacultyExamAttemptReview() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: 'var(--sp-8) var(--sp-6)' }}>
-      <Button variant="ghost" onClick={() => navigate(`${base}/courses/${courseId}/exams/${examId}/results`)} style={{ marginBottom: 'var(--sp-4)' }}>
-        &larr; Back to Results
+      <Button variant="ghost" onClick={() => window.history.length > 1 ? navigate(-1) : navigate(`${base}/exam-reviews`)} style={{ marginBottom: 'var(--sp-4)' }}>
+        &larr; Back
       </Button>
       
       <div style={{ marginBottom: 'var(--sp-6)' }}>
@@ -118,7 +119,8 @@ export default function FacultyExamAttemptReview() {
 
       <div className="stack" style={{ gap: 'var(--sp-6)' }}>
         {questions.map((q, i) => {
-          const answer = attempt.answers.find(a => a.questionId === (q._id || q.id));
+          const rawAnswers = Array.isArray(attempt.answers) ? attempt.answers : (typeof attempt.answers === 'string' ? JSON.parse(attempt.answers || '[]') : []);
+          const answer = rawAnswers.find(a => String(a.questionId) === String(q._id || q.id));
           
           let dynamicIsCorrect = false;
           let dynamicMarks = answer?.marks || 0;
@@ -150,7 +152,151 @@ export default function FacultyExamAttemptReview() {
                 </span>
               </div>
               
-              <div style={{ fontSize: 'var(--fs-md)', marginBottom: 'var(--sp-4)' }}>{q.text}</div>
+              <div style={{ fontSize: 'var(--fs-md)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--sp-4)', lineHeight: 1.5 }}>
+                {q.questionText || q.text || 'Question Prompt'}
+              </div>
+
+              {/* BOOK REVIEW & RESEARCH PAPER SUBMISSIONS */}
+              {(q.type === 'BOOK_REVIEW' || q.type === 'RESEARCH_PAPER' || (!['MCQ', 'TRUE_FALSE'].includes(q.type) && (answer?.fileUrl || answer?.textAnswer || q.type !== 'SHORT_ANSWER'))) && (
+                <div className="stack" style={{ gap: '16px', background: '#f8fafc', padding: '18px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', padding: '4px 10px', borderRadius: '6px', background: '#e0e7ff', color: '#4338ca', letterSpacing: '0.5px' }}>
+                      {q.type === 'BOOK_REVIEW' ? '📖 Book Review Submission' : q.type === 'RESEARCH_PAPER' ? '📄 Research Paper Submission' : '📝 Student Submission'}
+                    </span>
+                    {answer?.isGraded === false || answer?.marks === undefined ? (
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#d97706', background: '#fef3c7', padding: '3px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={13} /> Pending Evaluation
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '3px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCircle size={13} /> Evaluated: {answer.marks} / {q.marks} Marks
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Uploaded File Section */}
+                  {answer?.fileUrl ? (
+                    <div style={{ 
+                      padding: '14px 18px', 
+                      background: '#ffffff', 
+                      borderRadius: '8px', 
+                      border: '1px solid #cbd5e1', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '12px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ padding: '8px', background: '#eff6ff', borderRadius: '6px', color: '#4f46e5' }}>
+                          <FileText size={22} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
+                            {answer.fileName || 'Uploaded Student Document'}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>
+                            Student submission file ready for evaluation
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <a 
+                          href={buildStaticUrl(answer.fileUrl)} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          style={{ 
+                            padding: '8px 16px', 
+                            background: '#4f46e5', 
+                            color: '#ffffff', 
+                            borderRadius: '6px', 
+                            fontSize: '13px', 
+                            fontWeight: 700, 
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                          }}
+                        >
+                          <Eye size={15} /> View File
+                        </a>
+                        <a 
+                          href={buildStaticUrl(answer.fileUrl)} 
+                          download
+                          target="_blank" 
+                          rel="noreferrer" 
+                          style={{ 
+                            padding: '8px 14px', 
+                            background: '#ffffff', 
+                            color: '#334155', 
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px', 
+                            fontSize: '13px', 
+                            fontWeight: 600, 
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <Download size={15} /> Download
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '12px 16px', background: '#f1f5f9', borderRadius: '8px', border: '1px dashed #cbd5e1', color: '#64748b', fontSize: '13px' }}>
+                      ℹ️ No attached document file was uploaded for this question.
+                    </div>
+                  )}
+
+                  {/* Written Abstract / Commentary */}
+                  <div>
+                    <strong style={{ fontSize: '13px', color: '#334155', display: 'block', marginBottom: '6px' }}>
+                      Student Written Abstract / Summary:
+                    </strong>
+                    <div style={{ padding: '14px', background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap', color: '#1e293b' }}>
+                      {answer?.textAnswer || (typeof answer?.selectedOption === 'string' && !answer.selectedOption.startsWith('http') ? answer.selectedOption : '') || <em style={{ color: '#94a3b8' }}>No written commentary provided by student.</em>}
+                    </div>
+                  </div>
+
+                  {/* Grading / Score Award Box */}
+                  <div style={{ marginTop: '8px', background: '#ffffff', padding: '18px', borderRadius: '8px', border: '2px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
+                        Award Evaluation Score:
+                      </span>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>
+                        Maximum Marks: {q.marks}
+                      </span>
+                    </div>
+
+                    <div className="row" style={{ alignItems: 'flex-end', gap: '14px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                          Score Obtained (0 to {q.marks}):
+                        </label>
+                        <Input 
+                          type="number" 
+                          max={q.marks} 
+                          min={0} 
+                          value={grading[q._id || q.id] ?? answer?.marks ?? 0} 
+                          onChange={(e) => setGrading(g => ({ ...g, [q._id || q.id]: e.target.value }))} 
+                        />
+                      </div>
+                      <Button 
+                        size="md" 
+                        variant="primary"
+                        style={{ background: '#4f46e5', minWidth: '130px' }}
+                        onClick={() => submitGrade(q._id || q.id, grading[q._id || q.id] ?? answer?.marks ?? 0)}
+                      >
+                        {answer?.isGraded ? 'Update Grade' : 'Save Grade'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {q.type === 'MCQ' && (
                 <div className="stack" style={{ gap: '12px' }}>

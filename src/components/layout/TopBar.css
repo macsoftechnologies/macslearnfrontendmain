@@ -196,3 +196,51 @@
   .topbar__menu { display: flex; }
   .topbar__profile-meta { display: none; }
 }
+/* Header Quick-Action Buttons (Live Sessions, Chat) */
+.topbar__header-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: var(--accent-light);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+}
+
+.topbar__header-btn:hover {
+  background: var(--accent);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.topbar__header-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid var(--glass-heavy);
+}
+
+.topbar__header-badge--live {
+  background: #3b82f6;
+}
+
+.topbar__header-badge--chat {
+  background: #10b981;
+}

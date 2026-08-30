@@ -189,7 +189,7 @@ export default function CourseDetail() {
             {course.status === 'DRAFT' && canManageContent && (
               <Button variant="primary" icon={CheckCircle2} onClick={publishCourse}>Publish Course</Button>
             )}
-            <Button variant="outline" style={{ background: 'var(--glass-light)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }} icon={MessagesSquare} onClick={() => setSidebarOpen(true)}>Chat</Button>
+            
           </div>
         </div>
       </div>
