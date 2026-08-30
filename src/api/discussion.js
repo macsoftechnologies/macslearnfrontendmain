@@ -23,3 +23,8 @@ export const getThreadMembers = (threadId) =>
   client.get(`/discussion/threads/${threadId}/members`);
 export const openCourseThread = (courseId, batchId, title) =>
   client.post('/discussion/course-thread', { courseId, batchId, title });
+export const previewMembers = (courseId, batchId) =>
+  client.get('/discussion/preview-members', { params: { courseId, batchId } });
+
+export const deleteThread = (threadId) =>
+  client.delete(`/discussion/threads/${threadId}`);

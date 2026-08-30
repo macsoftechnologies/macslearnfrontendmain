@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, Send, Users, User, Shield, Search, Plus, 
   Circle, CheckCheck, BookOpen, Clock, Smile, ChevronLeft,
-  Sparkles, RefreshCw, Paperclip, MessageCircle, UserPlus, FolderPlus, Info, GraduationCap
+  Sparkles, RefreshCw, Paperclip, MessageCircle, UserPlus, FolderPlus, Info, GraduationCap, Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as discussionApi from '../../api/discussion';
@@ -54,6 +54,8 @@ export default function ChatHub() {
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [groupTitle, setGroupTitle] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   // View Members Modal
   const [membersModal, setMembersModal] = useState(false);
@@ -215,6 +217,7 @@ export default function ChatHub() {
     setGroupTitle('');
     setSelectedBatchId('');
     setSelectedCourseId('');
+    setPreviewData(null);
     try {
       const [bRes, cRes] = await Promise.allSettled([
         academicBatchesApi.list(),
@@ -230,6 +233,30 @@ export default function ChatHub() {
       }
     } catch {}
   };
+
+  // Preview membership on selection
+  useEffect(() => {
+    if (!newGroupModal) return;
+    const fetchPreview = async () => {
+      if ((groupType === 'SUBJECT' && selectedCourseId) || (groupType === 'BATCH' && selectedBatchId)) {
+        setLoadingPreview(true);
+        try {
+          const res = await discussionApi.previewMembers(
+            groupType === 'SUBJECT' ? selectedCourseId : null,
+            selectedBatchId || null
+          );
+          setPreviewData(res.data?.data || res.data || null);
+        } catch {
+          setPreviewData(null);
+        } finally {
+          setLoadingPreview(false);
+        }
+      } else {
+        setPreviewData(null);
+      }
+    };
+    fetchPreview();
+  }, [selectedCourseId, selectedBatchId, groupType, newGroupModal]);
 
   const handleCreateGroup = async (e) => {
     if (e) e.preventDefault();
@@ -247,13 +274,18 @@ export default function ChatHub() {
       let res;
       let finalTitle = groupTitle.trim();
 
+      const batch = batches.find(b => b.id === selectedBatchId);
+      const course = courses.find(c => (c.id || c._id) === selectedCourseId);
+
       if (groupType === 'SUBJECT') {
-        const course = courses.find(c => (c.id || c._id) === selectedCourseId);
-        if (!finalTitle) finalTitle = course ? `${course.title} Subject Discussion` : 'Subject Discussion';
+        if (!finalTitle) {
+          finalTitle = batch ? `${batch.name} - ${course?.title || 'Subject'}` : `${course?.title || 'Subject'} Discussion`;
+        }
         res = await discussionApi.openCourseThread(selectedCourseId, selectedBatchId || null, finalTitle);
       } else {
-        const batch = batches.find(b => b.id === selectedBatchId);
-        if (!finalTitle) finalTitle = batch ? `${batch.name} Cohort Discussion` : 'Cohort Group';
+        if (!finalTitle) {
+          finalTitle = batch ? `${batch.name} Cohort Discussion` : 'Cohort Group';
+        }
         res = await discussionApi.openBatchThread(selectedBatchId || null, finalTitle);
       }
 
@@ -274,6 +306,20 @@ export default function ChatHub() {
       extractErrorMessages(err).forEach(m => toast.error(m));
     } finally {
       setCreatingGroup(false);
+    }
+  };
+
+  const handleDeleteThread = async () => {
+    if (!activeThread?.id) return;
+    if (!window.confirm(`Are you sure you want to delete/archive "${activeThread.title}"?`)) return;
+
+    try {
+      await discussionApi.deleteThread(activeThread.id);
+      toast.success('Discussion group deleted');
+      setActiveThread(null);
+      await loadInbox(true);
+    } catch (err) {
+      extractErrorMessages(err).forEach(m => toast.error(m));
     }
   };
 
@@ -520,23 +566,37 @@ export default function ChatHub() {
                     </div>
                     <div style={{ fontSize: '0.78rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, marginTop: '2px' }}>
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                      {activeThread.threadType === 'COURSE_GROUP' ? 'Subject Discussion Channel (Faculty, Admins & Enrolled Students)' : activeThread.threadType === 'BATCH_GROUP' ? 'Cohort Live Discussion Group' : 'Online · Real-Time Direct Chat'}
+                      {activeThread.threadType === 'COURSE_GROUP' ? 'Subject Discussion Channel (Faculty, Admins & Enrolled Batch Students)' : activeThread.threadType === 'BATCH_GROUP' ? 'Cohort Live Discussion Group' : 'Online · Real-Time Direct Chat'}
                     </div>
                   </div>
                 </div>
 
-                {/* Group Members Button (for group threads) */}
-                {(activeThread.threadType === 'BATCH_GROUP' || activeThread.threadType === 'COURSE_GROUP') && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    icon={Users}
-                    onClick={openMembersModal}
-                    style={{ fontSize: '0.8rem', fontWeight: 700, gap: '6px' }}
-                  >
-                    View Members
-                  </Button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Group Members Button */}
+                  {(activeThread.threadType === 'BATCH_GROUP' || activeThread.threadType === 'COURSE_GROUP') && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      icon={Users}
+                      onClick={openMembersModal}
+                      style={{ fontSize: '0.8rem', fontWeight: 700, gap: '6px' }}
+                    >
+                      View Members
+                    </Button>
+                  )}
+
+                  {/* Delete / Archive button for Admins */}
+                  {isStaff && (activeThread.threadType === 'BATCH_GROUP' || activeThread.threadType === 'COURSE_GROUP') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      icon={Trash2}
+                      onClick={handleDeleteThread}
+                      style={{ color: '#ef4444', borderColor: '#fca5a5', padding: '6px 10px' }}
+                      title="Delete / Archive Discussion Group"
+                    />
+                  )}
+                </div>
               </div>
 
               {/* Feed Canvas */}
@@ -763,7 +823,7 @@ export default function ChatHub() {
         onClose={() => setNewGroupModal(false)}
         title="Create Academic Discussion Group"
       >
-        <form onSubmit={handleCreateGroup} className="stack" style={{ gap: '1.25rem' }}>
+        <form onSubmit={handleCreateGroup} className="stack" style={{ gap: '1.15rem' }}>
           <div>
             <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
               Group Discussion Type
@@ -813,6 +873,33 @@ export default function ChatHub() {
             </div>
           </div>
 
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+              Select Academic Batch / Cohort *
+            </label>
+            <Select 
+              value={selectedBatchId} 
+              onChange={(e) => {
+                setSelectedBatchId(e.target.value);
+                const b = batches.find(x => x.id === e.target.value);
+                const c = courses.find(x => (x.id || x._id) === selectedCourseId);
+                if (b && groupType === 'BATCH') {
+                  setGroupTitle(`${b.name} Cohort Discussion`);
+                } else if (b && c && groupType === 'SUBJECT') {
+                  setGroupTitle(`${b.name} - ${c.title}`);
+                }
+              }}
+              required
+            >
+              <option value="">-- Choose Cohort / Batch --</option>
+              {batches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+
           {groupType === 'SUBJECT' && (
             <div>
               <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
@@ -823,7 +910,10 @@ export default function ChatHub() {
                 onChange={(e) => {
                   setSelectedCourseId(e.target.value);
                   const c = courses.find(x => (x.id || x._id) === e.target.value);
-                  if (c && !groupTitle) {
+                  const b = batches.find(x => x.id === selectedBatchId);
+                  if (c && b) {
+                    setGroupTitle(`${b.name} - ${c.title}`);
+                  } else if (c) {
                     setGroupTitle(`${c.title} Subject Discussion`);
                   }
                 }}
@@ -839,36 +929,38 @@ export default function ChatHub() {
             </div>
           )}
 
-          <div>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
-              Select Academic Batch / Cohort {groupType === 'BATCH' ? '*' : '(Optional)'}
-            </label>
-            <Select 
-              value={selectedBatchId} 
-              onChange={(e) => {
-                setSelectedBatchId(e.target.value);
-                const b = batches.find(x => x.id === e.target.value);
-                if (b && !groupTitle && groupType === 'BATCH') {
-                  setGroupTitle(`${b.name} Cohort Discussion`);
-                }
-              }}
-              required={groupType === 'BATCH'}
-            >
-              <option value="">-- Choose Cohort / Batch --</option>
-              {batches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
-          </div>
+          {/* Dynamic Member Preview */}
+          {((groupType === 'SUBJECT' && selectedCourseId) || (groupType === 'BATCH' && selectedBatchId)) && (
+            <div style={{ background: 'var(--surface-muted, #f8fafc)', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '10px', padding: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Users size={15} color="#4f46e5" /> Group Members Included ({previewData?.totalCount || 0})
+                </span>
+                {loadingPreview && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Calculating...</span>}
+              </div>
+
+              {previewData && (
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div>
+                    👨‍🏫 <strong>{previewData.staff?.length || 0} Faculty & Admins</strong>
+                    {previewData.staff?.length > 0 && (
+                      <span style={{ color: 'var(--text-muted)' }}> ({previewData.staff.map(s => s.fullName).join(', ')})</span>
+                    )}
+                  </div>
+                  <div>
+                    🎓 <strong>{previewData.students?.length || 0} Enrolled Batch Students</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
               Group Title / Name
             </label>
             <Input 
-              placeholder="e.g. Synoptic Gospels Subject Discussion"
+              placeholder="e.g. Apr-Aug 2026 Batch - Synoptic Gospels"
               value={groupTitle}
               onChange={(e) => setGroupTitle(e.target.value)}
               required
@@ -882,7 +974,7 @@ export default function ChatHub() {
             <Button 
               type="submit" 
               variant="primary" 
-              disabled={creatingGroup || (groupType === 'SUBJECT' && !selectedCourseId) || (groupType === 'BATCH' && !selectedBatchId)}
+              disabled={creatingGroup || (groupType === 'SUBJECT' && (!selectedCourseId || !selectedBatchId)) || (groupType === 'BATCH' && !selectedBatchId)}
               style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', color: '#fff', fontWeight: 800 }}
             >
               {creatingGroup ? 'Creating...' : 'Create Discussion Group'}
