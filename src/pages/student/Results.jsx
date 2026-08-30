@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import * as resultsApi from '../../api/results';
 import * as transcriptsApi from '../../api/transcripts';
 import * as studentsApi from '../../api/students';
+import * as programsApi from '../../api/programs';
 import client from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import DataTable from '../../components/ui/DataTable';
@@ -36,6 +37,7 @@ export default function Results() {
   const [transcripts, setTranscripts] = useState({ grades: [], totalCredits: 0, averageScore: 0 });
   const [enrollments, setEnrollments] = useState([]);
   const [programs, setPrograms] = useState([]);
+  const [allProgramsList, setAllProgramsList] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Default tab is 'progress' so students immediately see how many are done vs pending!
@@ -50,7 +52,8 @@ export default function Results() {
       resultsApi.myVideoQuizzes(),
       transcriptsApi.getMyGrades(),
       studentsApi.getEnrollments(userId),
-      client.get(`/students/${userId}/programs`)
+      client.get(`/students/${userId}/programs`),
+      programsApi.list({ limit: 100 })
     ]).then(([res1, res2, res3, res4, res5, res6]) => {
       if (res1.status === 'fulfilled') setResults(res1.value.data?.data || []);
       if (res2.status === 'fulfilled') setAttempts(res2.value.data?.data || []);
@@ -64,6 +67,10 @@ export default function Results() {
         const progs = res6.value.data?.data || res6.value.data;
         setPrograms(Array.isArray(progs) ? progs : []);
       }
+      if (res7 && res7.status === 'fulfilled') {
+        const allP = res7.value.data?.data || res7.value.data;
+        setAllProgramsList(Array.isArray(allP) ? allP : []);
+      }
       setLoading(false);
     });
   }, [userId]);
@@ -75,8 +82,14 @@ export default function Results() {
   const completedEnrollments = enrollments.filter(e => e.status === 'COMPLETED' || (e.progressPercentage ?? 0) >= 100);
   const pendingEnrollments = enrollments.filter(e => e.status !== 'COMPLETED' && (e.progressPercentage ?? 0) < 100);
 
-  const primaryProgram = programs[0] || (programEnrollments[0]?.program ? programEnrollments[0].program : null);
-  const totalProgramSubjects = primaryProgram?.totalSubjects || enrollments.length || 0;
+  const matchedProgram = allProgramsList.find(p => 
+    (p.id === user?.programId || p._id === user?.programId) ||
+    p.name?.toLowerCase().trim() === String(user?.customProfile?.interestedCourse || '').toLowerCase().trim() ||
+    (enrollments[0]?.programId && (p.id === enrollments[0].programId || p._id === enrollments[0].programId))
+  );
+
+  const primaryProgram = matchedProgram || programs[0] || (programEnrollments[0]?.program ? programEnrollments[0].program : null);
+  const totalProgramSubjects = primaryProgram?.totalSubjects || 30;
   const completedSubjectsCount = completedEnrollments.length;
   const pendingSubjectsCount = Math.max(0, totalProgramSubjects - completedSubjectsCount);
   const progressPercent = totalProgramSubjects > 0 ? Math.min(100, Math.round((completedSubjectsCount / totalProgramSubjects) * 100)) : 0;
