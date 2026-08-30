@@ -47,6 +47,9 @@ export default function StudentProfile() {
   const [previewPdfData, setPreviewPdfData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [viewPdfUrl, setViewPdfUrl] = useState(null);
+  const [regModal, setRegModal] = useState(false);
+  const [newRegId, setNewRegId] = useState('');
+  const [savingReg, setSavingReg] = useState(false);
   
   // For lazy loading lessons
   const [lessonsMap, setLessonsMap] = useState({});
@@ -145,6 +148,24 @@ export default function StudentProfile() {
     }
   };
 
+
+  const handleUpdateRegistrationId = async (e) => {
+    if (e) e.preventDefault();
+    setSavingReg(true);
+    try {
+      await studentsApi.update(id, { registrationId: newRegId.trim() });
+      setData(prev => ({
+        ...prev,
+        profile: { ...prev.profile, registrationId: newRegId.trim() }
+      }));
+      setRegModal(false);
+      toast.success('Registration ID updated successfully!');
+    } catch (err) {
+      toast.error('Failed to update Registration ID');
+    } finally {
+      setSavingReg(false);
+    }
+  };
   const handleDownloadTranscript = async () => {
     const toastId = toast.loading('Generating official semester transcript...');
     try {
@@ -243,6 +264,18 @@ export default function StudentProfile() {
         <Card style={{ padding: 'var(--sp-5)' }}>
           <p className="section-title">Personal Details</p>
           <div className="stack" style={{ gap: 8 }}>
+            <Row label="Registration ID" value={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <strong style={{ color: '#4338ca', fontSize: '13px' }}>{profile.registrationId || 'Not Assigned'}</strong>
+                <button
+                  type="button"
+                  onClick={() => { setNewRegId(profile.registrationId || ''); setRegModal(true); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-primary-600)', cursor: 'pointer', fontSize: '11px', textDecoration: 'underline', fontWeight: 700 }}
+                >
+                  {profile.registrationId ? 'Edit' : '+ Set ID'}
+                </button>
+              </div>
+            } />
             <Row label="Mobile" value={profile.mobile || '—'} />
             <Row label="Region" value={profile.regionId?.name || profile.regionId || '—'} />
             {questions.slice(0, Math.ceil(questions.length/2)).map(q => {
@@ -970,6 +1003,41 @@ export default function StudentProfile() {
             </object>
           </div>
         )}
+      </Modal>
+
+      {/* EDIT REGISTRATION ID MODAL */}
+      <Modal
+        open={regModal}
+        onClose={() => setRegModal(false)}
+        title="Student Registration ID / Roll Number"
+      >
+        <form onSubmit={handleUpdateRegistrationId} className="stack" style={{ gap: '1rem' }}>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+              Registration ID / Roll No *
+            </label>
+            <input
+              type="text"
+              className="input"
+              placeholder="e.g. 2026/ATA/0042 or REG-1049"
+              value={newRegId}
+              onChange={(e) => setNewRegId(e.target.value)}
+              required
+              style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', fontWeight: 700 }}
+            />
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+              This registration number appears on the official academic transcript, grade sheets, and degree certificates.
+            </p>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <Button variant="outline" type="button" onClick={() => setRegModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={savingReg} style={{ fontWeight: 700 }}>
+              Save Registration ID
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

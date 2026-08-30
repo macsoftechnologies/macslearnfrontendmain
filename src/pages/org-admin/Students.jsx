@@ -154,6 +154,7 @@ export default function Students() {
     const { primaryAutoBatch } = computeBatchOptionsForProgram(prog);
 
     setApprovalForm({
+      registrationId: student.registrationId || student.customProfile?.registrationId || '',
       programId: selectedProgId,
       enrollmentTiming: 'PURCHASE', // 'PURCHASE' | 'IMMEDIATE'
       batchId: student.batchId || '',
