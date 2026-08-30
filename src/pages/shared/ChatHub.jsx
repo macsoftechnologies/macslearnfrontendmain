@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, Send, Users, User, Shield, Search, Plus, 
   Circle, CheckCheck, BookOpen, Clock, Smile, ChevronLeft,
-  Sparkles, RefreshCw, Paperclip, MessageCircle, UserPlus, FolderPlus
+  Sparkles, RefreshCw, Paperclip, MessageCircle, UserPlus, FolderPlus, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as discussionApi from '../../api/discussion';
@@ -18,6 +18,7 @@ import './ChatHub.css';
 
 export default function ChatHub() {
   const { user } = useAuth();
+  const userId = user?.id || user?.userId || user?._id;
   const isStaff = user?.userType === 'ORG_USER' || user?.userType === 'FACULTY' || user?.userType === 'SUPER_ADMIN';
 
   const [inbox, setInbox] = useState({ directChats: [], batchGroups: [] });
@@ -33,7 +34,7 @@ export default function ChatHub() {
   const [sending, setSending] = useState(false);
   const [readMap, setReadMap] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(`chat_last_read_${user?.id || user?.userId || user?._id}`) || '{}');
+      return JSON.parse(localStorage.getItem(`chat_last_read_${userId}`) || '{}');
     } catch { return {}; }
   });
 
@@ -49,6 +50,12 @@ export default function ChatHub() {
   const [selectedBatchId, setSelectedBatchId] = useState('');
   const [groupTitle, setGroupTitle] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
+
+  // View Members Modal
+  const [membersModal, setMembersModal] = useState(false);
+  const [membersData, setMembersData] = useState({ staff: [], students: [], totalCount: 0, threadTitle: '' });
+  const [memberSearch, setMemberSearch] = useState('');
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatScrollRef = useRef(null);
@@ -78,11 +85,11 @@ export default function ChatHub() {
   }, []);
 
   const markThreadAsRead = (threadId) => {
-    if (!threadId) return;
+    if (!threadId || !userId) return;
     setReadMap(prev => {
       const updated = { ...prev, [threadId]: new Date().toISOString() };
       try {
-        localStorage.setItem(`chat_last_read_${user?.id || user?.userId || user?._id}`, JSON.stringify(updated));
+        localStorage.setItem(`chat_last_read_${userId}`, JSON.stringify(updated));
         window.dispatchEvent(new Event('refresh-chat-unread-count'));
       } catch {}
       return updated;
@@ -235,6 +242,27 @@ export default function ChatHub() {
       extractErrorMessages(err).forEach(m => toast.error(m));
     } finally {
       setCreatingGroup(false);
+    }
+  };
+
+  const openMembersModal = async () => {
+    if (!activeThread?.id) return;
+    setMembersModal(true);
+    setLoadingMembers(true);
+    setMemberSearch('');
+    try {
+      const res = await discussionApi.getThreadMembers(activeThread.id);
+      const data = res.data?.data || res.data || { staff: [], students: [], totalCount: 0, threadTitle: '' };
+      setMembersData({
+        staff: Array.isArray(data.staff) ? data.staff : [],
+        students: Array.isArray(data.students) ? data.students : [],
+        totalCount: data.totalCount || 0,
+        threadTitle: data.threadTitle || activeThread.title || 'Discussion Group',
+      });
+    } catch (err) {
+      extractErrorMessages(err).forEach(m => toast.error(m));
+    } finally {
+      setLoadingMembers(false);
     }
   };
 
@@ -452,6 +480,19 @@ export default function ChatHub() {
                     </div>
                   </div>
                 </div>
+
+                {/* Group Members Button (for group threads) */}
+                {activeThread.threadType === 'BATCH_GROUP' && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    icon={Users}
+                    onClick={openMembersModal}
+                    style={{ fontSize: '0.8rem', fontWeight: 700, gap: '6px' }}
+                  >
+                    View Members
+                  </Button>
+                )}
               </div>
 
               {/* Feed Canvas */}
@@ -471,7 +512,7 @@ export default function ChatHub() {
                   </div>
                 ) : (
                   messages.map((msg, idx) => {
-                    const isMe = msg.authorId === (user?.id || user?.userId || user?._id);
+                    const isMe = msg.authorId === userId;
 
                     return (
                       <div 
@@ -728,6 +769,99 @@ export default function ChatHub() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* MODAL 3: VIEW GROUP MEMBERS */}
+      <Modal
+        open={membersModal}
+        onClose={() => setMembersModal(false)}
+        title={`Group Members - ${membersData.threadTitle}`}
+      >
+        <div className="stack" style={{ gap: '1rem' }}>
+          <div style={{ position: 'relative' }}>
+            <Input 
+              placeholder="Search members in this group..."
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+              style={{ paddingLeft: '32px' }}
+            />
+            <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          </div>
+
+          <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
+            {loadingMembers ? (
+              <div style={{ padding: '2rem 0', textAlign: 'center' }}><PageLoader /></div>
+            ) : (
+              <>
+                {/* Staff */}
+                {membersData.staff.length > 0 && (
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Faculty & Admins</span>
+                      <span>{membersData.staff.length}</span>
+                    </div>
+                    {membersData.staff
+                      .filter(m => m.fullName?.toLowerCase().includes(memberSearch.toLowerCase()) || m.email?.toLowerCase().includes(memberSearch.toLowerCase()))
+                      .map(m => (
+                        <div 
+                          key={m.id}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', borderRadius: '8px', marginBottom: '4px', background: 'var(--surface-muted, #f8fafc)' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#4f46e5', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem' }}>
+                              {m.fullName?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                {m.fullName} {m.id === userId && <span style={{ fontSize: '0.75rem', color: '#4f46e5' }}>(You)</span>}
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.email}</div>
+                            </div>
+                          </div>
+                          {getRolePill(m.userType)}
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {/* Enrolled Students */}
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Enrolled Cohort Students</span>
+                    <span>{membersData.students.length}</span>
+                  </div>
+                  {membersData.students.length === 0 ? (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>
+                      No students currently enrolled in this batch.
+                    </div>
+                  ) : (
+                    membersData.students
+                      .filter(m => m.fullName?.toLowerCase().includes(memberSearch.toLowerCase()) || m.email?.toLowerCase().includes(memberSearch.toLowerCase()))
+                      .map(m => (
+                        <div 
+                          key={m.id}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', borderRadius: '8px', marginBottom: '4px', background: 'var(--surface-muted, #f8fafc)' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem' }}>
+                              {m.fullName?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                {m.fullName} {m.id === userId && <span style={{ fontSize: '0.75rem', color: '#10b981' }}>(You)</span>}
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.email}</div>
+                            </div>
+                          </div>
+                          {getRolePill(m.userType)}
+                        </div>
+                      ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

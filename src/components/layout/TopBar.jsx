@@ -44,6 +44,7 @@ export default function TopBar({ onMenuClick, title }) {
           } catch {}
 
           let unread = 0;
+          const uId = user?.id || user?.userId || user?._id;
           allConvs.forEach(conv => {
             const lastRead = readMap[conv.id];
             const msgTime = conv.lastMessageAt ? new Date(conv.lastMessageAt).getTime() : 0;

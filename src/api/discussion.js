@@ -19,3 +19,5 @@ export const getThread = (courseId, threadId) => client.get(`/discussion/courses
 export const reply = (threadId, data) => client.post(`/discussion/threads/${threadId}/replies`, data);
 export const listReplies = (threadId) => client.get(`/discussion/threads/${threadId}/replies`);
 export const acceptReply = (threadId, replyId) => client.patch(`/discussion/threads/${threadId}/replies/${replyId}/accept`);
+export const getThreadMembers = (threadId) =>
+  client.get(`/discussion/threads/${threadId}/members`);
