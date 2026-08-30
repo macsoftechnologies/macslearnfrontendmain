@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { Popover } from '@headlessui/react';
-import { Menu, ChevronDown, LogOut, UserCircle, KeyRound, Sun, Moon, Video, MessageSquare } from 'lucide-react';
+import { Menu, ChevronDown, LogOut, UserCircle, KeyRound, Sun, Moon, Video, MessageSquare, Settings, BarChart3 } from 'lucide-react';
 import * as liveSessionsApi from '../../api/liveSessions';
 import * as discussionApi from '../../api/discussion';
 import { useNavigate } from 'react-router-dom';
@@ -34,9 +34,26 @@ export default function TopBar({ onMenuClick, title }) {
         }
         if (chatRes.status === 'fulfilled') {
           const inbox = chatRes.value?.data?.data || chatRes.value?.data || {};
-          const dChats = Array.isArray(inbox.directChats) ? inbox.directChats.length : 0;
-          const bGroups = Array.isArray(inbox.batchGroups) ? inbox.batchGroups.length : 0;
-          setUnreadMsgCount(dChats + bGroups);
+          const dChats = Array.isArray(inbox.directChats) ? inbox.directChats : [];
+          const bGroups = Array.isArray(inbox.batchGroups) ? inbox.batchGroups : [];
+          const allConvs = [...dChats, ...bGroups];
+
+          let readMap = {};
+          try {
+            readMap = JSON.parse(localStorage.getItem(`chat_last_read_${user?.id || user?.userId || user?._id}`) || '{}');
+          } catch {}
+
+          let unread = 0;
+          allConvs.forEach(conv => {
+            const lastRead = readMap[conv.id];
+            const msgTime = conv.lastMessageAt ? new Date(conv.lastMessageAt).getTime() : 0;
+            if (msgTime > 0) {
+              if (!lastRead || msgTime > new Date(lastRead).getTime()) {
+                unread += 1;
+              }
+            }
+          });
+          setUnreadMsgCount(unread);
         }
       }
     } catch {}
@@ -44,9 +61,14 @@ export default function TopBar({ onMenuClick, title }) {
 
   useEffect(() => {
     fetchHeaderCounts();
-    const interval = setInterval(fetchHeaderCounts, 30000);
-    return () => clearInterval(interval);
-  }, [role]);
+    const handleChatRefresh = () => fetchHeaderCounts();
+    window.addEventListener('refresh-chat-unread-count', handleChatRefresh);
+    const interval = setInterval(fetchHeaderCounts, 15000);
+    return () => {
+      window.removeEventListener('refresh-chat-unread-count', handleChatRefresh);
+      clearInterval(interval);
+    };
+  }, [role, user?.id]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -137,6 +159,21 @@ export default function TopBar({ onMenuClick, title }) {
             <button onClick={() => navigate(`/${ROLE_PATH[role]}/profile`)}>
               <UserCircle size={15} /> My Profile
             </button>
+            {role === 'ORG_USER' && (
+              <button onClick={() => navigate('/admin/reports/overview')}>
+                <BarChart3 size={15} /> Reports & Analytics
+              </button>
+            )}
+            {role === 'FINANCE' && (
+              <button onClick={() => navigate('/finance/reports/overview')}>
+                <BarChart3 size={15} /> Financial Reports
+              </button>
+            )}
+            {role === 'ORG_USER' && (
+              <button onClick={() => navigate('/admin/settings/organization')}>
+                <Settings size={15} /> Organization Settings
+              </button>
+            )}
             <button onClick={() => navigate(`/${ROLE_PATH[role]}/profile`)}>
               <KeyRound size={15} /> Change Password
             </button>

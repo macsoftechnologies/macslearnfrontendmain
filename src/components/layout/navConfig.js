@@ -1,7 +1,7 @@
 import {
-  LayoutDashboard, MessageSquare, Video, Calendar, Building2, CreditCard, ScrollText, Users, GraduationCap,
+  LayoutDashboard, Calendar, Building2, CreditCard, ScrollText, Users, GraduationCap,
   BookOpen, FolderTree, ClipboardList, Wallet, BarChart3, Settings,
-  FileCheck2, PenSquare, MessagesSquare, Compass, Library, Award, Receipt, UserCircle, Shield, Clock
+  FileCheck2, Compass, Library, Award, Receipt, Shield, Clock
 } from 'lucide-react';
 
 export const NAV = {
@@ -24,10 +24,8 @@ export const NAV = {
     
     // Curriculum & Academics
     { to: '/admin/programs', label: 'Programs & Degrees', icon: GraduationCap },
-    { to: '/admin/semesters', label: 'Semesters', icon: Calendar },
+    { to: '/admin/semesters', label: 'Semesters', icon: Clock },
     { to: '/admin/courses', label: 'Course Catalog', icon: BookOpen },
-    { to: '/admin/live-sessions', label: 'Live Sessions & Attendance', icon: Video },
-    { to: '/admin/chat', label: 'Messages & Discussions', icon: MessageSquare },
     { to: '/admin/batches', label: 'Cohorts / Batches', icon: FolderTree },
     { to: '/admin/certificate-templates', label: 'Certificate Templates', icon: Award },
     
@@ -36,48 +34,36 @@ export const NAV = {
     { to: '/admin/faculty', label: 'Faculty', icon: Users, requiredPermissions: ['MANAGE_USERS', 'ALL'] },
     { to: '/admin/team', label: 'Admins & Team', icon: Shield },
     
-    // Enrollment & Records
+    // Enrollment & Examination Records
     { to: '/admin/enrollments', label: 'Enrollments', icon: ClipboardList },
-    { to: '/admin/program-expiry', label: 'Program Expiry', icon: Clock },
-    { to: '/admin/approvals', label: 'Content Approvals', icon: FileCheck2, requiredPermissions: ['MANAGE_CONTENT', 'ALL'] },
     { to: '/admin/grades', label: 'Grades & Transcripts', icon: ScrollText },
     { to: '/admin/exam-reviews', label: 'Review Exams', icon: FileCheck2 },
+    { to: '/admin/approvals', label: 'Content Approvals', icon: FileCheck2, requiredPermissions: ['MANAGE_CONTENT', 'ALL'] },
+    { to: '/admin/program-expiry', label: 'Program Expiry', icon: Clock },
     { to: '/admin/dmin-evaluations', label: 'D.Min Evaluations', icon: Award },
     
-    // Finance & Operations
+    // Finance & Global Setup
     { to: '/admin/payments', label: 'Payments', icon: Wallet },
     { to: '/admin/regions', label: 'Regions & Pricing', icon: Compass },
-    { to: '/admin/reports/overview', label: 'Reports', icon: BarChart3 },
-    
-    // System
-    { to: '/admin/settings/organization', label: 'Settings', icon: Settings },
   ],
   FACULTY: [
     { to: '/faculty/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/faculty/courses', label: 'My Courses', icon: BookOpen },
-    { to: '/faculty/live-sessions', label: 'Live Sessions & Attendance', icon: Video },
-    { to: '/faculty/chat', label: 'Messages & Discussions', icon: MessageSquare },
     { to: '/faculty/grading-queue', label: 'Grading Queue', icon: ClipboardList },
     { to: '/faculty/exam-reviews', label: 'Review Exams', icon: FileCheck2 },
     { to: '/faculty/program-expiry', label: 'Program Expiry', icon: Clock },
-    { to: '/faculty/profile', label: 'Profile', icon: UserCircle },
   ],
   STUDENT: [
     { to: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/student/programs', label: 'Browse Programs', icon: GraduationCap },
     { to: '/student/my-courses', label: 'My Courses', icon: Library },
-    { to: '/student/live-sessions', label: 'Live Sessions & Schedule', icon: Video },
-    { to: '/student/chat', label: 'Messages & Classmates', icon: MessageSquare },
     { to: '/student/results', label: 'Results', icon: FileCheck2 },
     { to: '/student/certificates', label: 'Certificates', icon: Award },
     { to: '/student/payments', label: 'Payments', icon: Receipt },
-    { to: '/student/profile', label: 'Profile', icon: UserCircle },
   ],
   FINANCE: [
     { to: '/finance/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/finance/payments', label: 'Payments', icon: Wallet },
-    { to: '/finance/reports/overview', label: 'Reports', icon: BarChart3 },
-    { to: '/finance/profile', label: 'Profile', icon: UserCircle },
   ],
 };
 

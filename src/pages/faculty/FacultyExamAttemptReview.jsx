@@ -20,7 +20,8 @@ export default function FacultyExamAttemptReview() {
   const [questions, setQuestions] = useState([]);
   const [grading, setGrading] = useState({});
   const [exam, setExam] = useState(null);
-  const [issuingCert, setIssuingCert] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [isResultPublished, setIsResultPublished] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -51,19 +52,16 @@ export default function FacultyExamAttemptReview() {
     }
   };
 
-  const handleIssueCertificate = async () => {
-    if (!attempt?.studentId?._id) return;
-    setIssuingCert(true);
+  const handlePublish = async () => {
+    setPublishing(true);
     try {
-      await certificatesApi.approveCertificate({
-        studentId: attempt.studentId._id,
-        courseId: courseId,
-      });
-      toast.success('Certificate issued successfully!');
+      await examsApi.publishAttempt(examId, attemptId);
+      setIsResultPublished(true);
+      toast.success('Exam result published to student successfully!');
     } catch (err) {
       extractErrorMessages(err).forEach(m => toast.error(m));
     } finally {
-      setIssuingCert(false);
+      setPublishing(false);
     }
   };
 
@@ -71,23 +69,30 @@ export default function FacultyExamAttemptReview() {
   if (!attempt) return <div style={{ padding: 'var(--sp-6)' }}>Attempt not found.</div>;
 
   let computedMarksObtained = 0;
+  let totalQuestionsMarks = 0;
+  const rawAnswersList = Array.isArray(attempt.answers) ? attempt.answers : (typeof attempt.answers === 'string' ? JSON.parse(attempt.answers || '[]') : []);
+  
   questions.forEach(q => {
-    const answer = attempt.answers.find(a => a.questionId === (q._id || q.id));
+    totalQuestionsMarks += Number(q.marks) || 0;
+    const answer = rawAnswersList.find(a => String(a.questionId) === String(q._id || q.id));
     if (q.type === 'MCQ') {
       const correctOpt = (q.options || []).find(o => o.isCorrect);
       if (correctOpt && (correctOpt.text === answer?.selectedOption || correctOpt._id === answer?.selectedOption || correctOpt.id === answer?.selectedOption)) {
-        computedMarksObtained += q.marks;
+        computedMarksObtained += Number(q.marks) || 0;
       }
     } else if (q.type === 'TRUE_FALSE') {
       if (q.correctAnswer && q.correctAnswer.toLowerCase() === (answer?.selectedOption || '').toLowerCase()) {
-        computedMarksObtained += q.marks;
+        computedMarksObtained += Number(q.marks) || 0;
       }
-    } else if (q.type === 'SHORT_ANSWER') {
-      computedMarksObtained += answer?.marks || 0;
+    } else if (q.type === 'SHORT_ANSWER' || q.type === 'BOOK_REVIEW' || q.type === 'RESEARCH_PAPER') {
+      computedMarksObtained += Number(answer?.marks) || 0;
     }
   });
 
-  const computedPercentage = attempt.totalMarks > 0 ? (computedMarksObtained / attempt.totalMarks) * 100 : 0;
+  const effectiveTotalMarks = totalQuestionsMarks > 0 ? totalQuestionsMarks : (attempt.totalMarks || 100);
+  const effectiveObtained = computedMarksObtained || attempt.marksObtained || 0;
+  const computedPercentage = effectiveTotalMarks > 0 ? (effectiveObtained / effectiveTotalMarks) * 100 : 0;
+  const hasPendingEvaluation = rawAnswersList.some(a => a.isGraded === false);
   // Fallback to attempt's isPassed if we don't have passing criteria here easily, or we can use computed. 
   // Wait, we don't have passingPercentage here. We will just use attempt.isPassed. Or wait, attempt.isPassed might be wrong! But we don't know the passing criteria on this page easily, though we could fetch it. I'll just leave isPassed as is.
 
@@ -97,24 +102,39 @@ export default function FacultyExamAttemptReview() {
         &larr; Back
       </Button>
       
-      <div style={{ marginBottom: 'var(--sp-6)' }}>
-        <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 'bold' }}>Submission Review: {attempt.studentId?.fullName}</h1>
-        <p className="text-muted" style={{ marginTop: 'var(--sp-2)' }}>
-          Score: {computedMarksObtained} / {attempt.totalMarks} ({computedPercentage.toFixed(1)}%)
-          &nbsp;&middot;&nbsp; 
-          Status: {attempt.answers?.some(a => a.isGraded === false) ? <span style={{ color: 'var(--color-amber-600)', fontWeight: 'bold' }}>PENDING REVIEW</span> : <span style={{ color: attempt.isPassed ? 'var(--color-success-600)' : 'var(--color-danger-600)', fontWeight: 'bold' }}>{attempt.isPassed ? 'PASSED' : 'FAILED'}</span>}
-        </p>
-        
-        {exam?.isFinalExam && attempt.isPassed && (
-          <div style={{ marginTop: 'var(--sp-4)' }}>
-            <Button variant="primary" loading={issuingCert} onClick={handleIssueCertificate}>
-              Issue Certificate
+      <div style={{ marginBottom: 'var(--sp-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 'bold' }}>Submission Review: {attempt.studentId?.fullName}</h1>
+          <p className="text-muted" style={{ marginTop: 'var(--sp-2)', fontSize: '15px' }}>
+            Score: <strong style={{ color: 'var(--text-primary)' }}>{effectiveObtained} / {effectiveTotalMarks}</strong> ({computedPercentage.toFixed(1)}%)
+            &nbsp;&middot;&nbsp; 
+            Status: {hasPendingEvaluation ? (
+              <span style={{ color: '#d97706', fontWeight: 800, background: '#fef3c7', padding: '2px 8px', borderRadius: '4px' }}>PENDING REVIEW</span>
+            ) : (
+              <span style={{ color: attempt.isPassed || computedPercentage >= (exam?.passingPercentage || 50) ? '#16a34a' : '#dc2626', fontWeight: 800, background: attempt.isPassed || computedPercentage >= (exam?.passingPercentage || 50) ? '#dcfce7' : '#fee2e2', padding: '2px 8px', borderRadius: '4px' }}>
+                {attempt.isPassed || computedPercentage >= (exam?.passingPercentage || 50) ? 'PASSED' : 'FAILED'}
+              </span>
+            )}
+          </p>
+        </div>
+
+        {/* Publish Result Button */}
+        <div>
+          {isResultPublished ? (
+            <span style={{ background: '#dcfce7', color: '#15803d', padding: '8px 16px', borderRadius: '8px', fontWeight: 800, fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              ✓ Result Published to Student
+            </span>
+          ) : (
+            <Button 
+              variant="primary" 
+              loading={publishing} 
+              onClick={handlePublish}
+              style={{ background: '#4f46e5', color: '#ffffff', fontWeight: 700, padding: '8px 18px' }}
+            >
+              📢 Publish Result to Student
             </Button>
-            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-light)', marginTop: '8px' }}>
-              This is the final exam. Since the student passed, you can instantly generate and issue their certificate.
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="stack" style={{ gap: 'var(--sp-6)' }}>
