@@ -62,3 +62,8 @@ export const getStudentCyclicStatus = async (studentId, programId) => {
   return data;
 };
 
+
+export const progressStudents = async (id, payload = {}) => {
+  const { data } = await client.post(`/semesters/${id}/progress-students`, payload);
+  return data.data || data;
+};

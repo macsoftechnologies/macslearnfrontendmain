@@ -16,6 +16,7 @@ import Button from '../../components/ui/Button';
 import PageLoader from '../../components/ui/PageLoader';
 import * as reportsApi from '../../api/reports';
 import * as studentsApi from '../../api/students';
+import * as usersApi from '../../api/users';
 import * as coursesApi from '../../api/courses';
 import * as enrollmentsApi from '../../api/enrollments';
 
@@ -32,13 +33,19 @@ export default function AdminDashboard() {
   const [programs, setPrograms] = useState([]);
   const [batches, setBatches] = useState([]);
   const [allCourses, setAllCourses] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [faculties, setFaculties] = useState([]);
   const [orgZoomDefault, setOrgZoomDefault] = useState('');
 
   const [scheduleForm, setScheduleForm] = useState({
+    meetingType: 'BATCH', // 'BATCH' | 'SINGLE_STUDENT'
     programId: '',
     batchId: '',
     courseId: '',
+    studentId: '',
+    facultyId: '',
     sessionNumber: 1,
+    title: '',
     scheduledDate: new Date().toISOString().split('T')[0],
     scheduledTime: '07:00 PM',
     meetingUrl: '',
@@ -64,10 +71,14 @@ export default function AdminDashboard() {
   
   const openScheduleModal = () => {
     setScheduleForm({
+      meetingType: 'BATCH',
       programId: programs[0]?.id || programs[0]?._id || '',
       batchId: batches[0]?.id || batches[0]?._id || '',
       courseId: allCourses[0]?.id || allCourses[0]?._id || '',
+      studentId: '',
+      facultyId: '',
       sessionNumber: 1,
+      title: 'Subject Live Call 1 of 5',
       scheduledDate: new Date().toISOString().split('T')[0],
       scheduledTime: '07:00 PM',
       meetingUrl: orgZoomDefault || '',
@@ -80,8 +91,20 @@ export default function AdminDashboard() {
     e.preventDefault();
     setSavingSession(true);
     try {
-      await liveSessionsApi.create(scheduleForm);
-      toast.success('Live call session scheduled successfully for batch!');
+      const payload = {
+        ...scheduleForm,
+        sessionNumber: Number(scheduleForm.sessionNumber) || 1,
+      };
+      if (scheduleForm.meetingType === 'SINGLE_STUDENT') {
+        if (!payload.studentId) {
+          toast.error('Please select a student for 1-on-1 session');
+          setSavingSession(false);
+          return;
+        }
+        delete payload.batchId;
+      }
+      await liveSessionsApi.create(payload);
+      toast.success('Live call session scheduled successfully!');
       setScheduleModalOpen(false);
       const res = await liveSessionsApi.list();
       setLiveSessions(res.data?.data || res.data || res || []);
@@ -168,6 +191,8 @@ export default function AdminDashboard() {
         academicBatchesApi.list().catch(() => ({ data: [] })),
         coursesApi.list({ limit: 200 }).catch(() => ({ data: [] })),
         organizationsApi.getMe().catch(() => null),
+        studentsApi.list({ limit: 500 }).catch(() => ({ data: [] })),
+        usersApi.list({ userType: 'FACULTY', limit: 500 }).catch(() => ({ data: [] })),
       ]);
       if (results[0].status === 'fulfilled') setStats(results[0].value.data?.data || {});
       if (results[1].status === 'fulfilled') setPending(results[1].value.data?.data || []);
@@ -181,6 +206,14 @@ export default function AdminDashboard() {
         const defaultZoom = orgData?.zoomConfig?.defaultMeetingUrl || '';
         setOrgZoomDefault(defaultZoom);
         setScheduleForm(f => ({ ...f, meetingUrl: f.meetingUrl || defaultZoom }));
+      }
+      if (results[9]?.status === 'fulfilled') {
+        const rawStudents = results[9].value?.data?.data || results[9].value?.data || results[9].value || [];
+        setAllStudents(Array.isArray(rawStudents) ? rawStudents : []);
+      }
+      if (results[10]?.status === 'fulfilled') {
+        const rawFac = results[10].value?.data?.data || results[10].value?.data || results[10].value || [];
+        setFaculties(Array.isArray(rawFac) ? rawFac : []);
       }
       
       if (results[3].status === 'fulfilled') {
@@ -282,7 +315,24 @@ export default function AdminDashboard() {
           </div>
           <DataTable
             columns={[
-              { key: 'batchName', header: 'Batch / Cohort', render: (r) => <span style={{ fontWeight: 700, color: '#1e293b' }}>{r.batchName}</span> },
+              { 
+                key: 'batchName', 
+                header: 'Audience / Target', 
+                render: (r) => {
+                  if (r.meetingType === 'SINGLE_STUDENT' || r.studentId) {
+                    return (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#fdf2f8', color: '#be185d', borderRadius: '4px', fontWeight: 700, fontSize: '11px' }}>
+                        👤 1-on-1: {r.student?.fullName || r.studentName || 'Individual Student'}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#f1f5f9', color: '#334155', borderRadius: '4px', fontWeight: 700, fontSize: '11px' }}>
+                      👥 {r.batchName || 'Batch Cohort'}
+                    </span>
+                  );
+                } 
+              },
               { key: 'courseTitle', header: 'Subject / Course', render: (r) => <span style={{ fontWeight: 600, color: '#2563eb' }}>{r.courseTitle}</span> },
               { 
                 key: 'sessionNumber', 
@@ -376,36 +426,94 @@ export default function AdminDashboard() {
       <Modal
         open={scheduleModalOpen}
         onClose={() => setScheduleModalOpen(false)}
-        title="Schedule Live Subject Call (5 Calls Policy)"
-        subtitle="Set date & time for interactive batch session"
-        width={560}
+        title="Schedule Live Subject Call"
+        subtitle="Set date & time for interactive cohort or 1-on-1 student session"
+        width={580}
       >
         <form className="stack" style={{ gap: '1.25rem' }} onSubmit={handleCreateSession}>
-          <div className="form-grid">
-            <Field label="Program / Degree" required>
-              <Select 
-                value={scheduleForm.programId} 
-                onChange={(e) => setScheduleForm(f => ({ ...f, programId: e.target.value }))}
-                required
+          {/* Meeting Type Selector */}
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>Session Audience Type *</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setScheduleForm(f => ({ ...f, meetingType: 'BATCH' }))}
+                style={{
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: scheduleForm.meetingType === 'BATCH' ? '2px solid #2563eb' : '1px solid var(--border-color)',
+                  background: scheduleForm.meetingType === 'BATCH' ? '#eff6ff' : 'var(--bg-card)',
+                  color: scheduleForm.meetingType === 'BATCH' ? '#1e40af' : 'var(--text-primary)',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textAlign: 'center'
+                }}
               >
-                <option value="">-- Select Program --</option>
-                {programs.map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
-              </Select>
-            </Field>
-
-            <Field label="Target Batch / Cohort" required>
-              <Select 
-                value={scheduleForm.batchId} 
-                onChange={(e) => setScheduleForm(f => ({ ...f, batchId: e.target.value }))}
-                required
+                👥 Full Batch Cohort
+              </button>
+              <button
+                type="button"
+                onClick={() => setScheduleForm(f => ({ ...f, meetingType: 'SINGLE_STUDENT' }))}
+                style={{
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: scheduleForm.meetingType === 'SINGLE_STUDENT' ? '2px solid #be185d' : '1px solid var(--border-color)',
+                  background: scheduleForm.meetingType === 'SINGLE_STUDENT' ? '#fdf2f8' : 'var(--bg-card)',
+                  color: scheduleForm.meetingType === 'SINGLE_STUDENT' ? '#9d174d' : 'var(--text-primary)',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textAlign: 'center'
+                }}
               >
-                <option value="">-- Select Batch --</option>
-                {batches
-                  .filter(b => !scheduleForm.programId || b.programId === scheduleForm.programId)
-                  .map(b => <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.batchCode}</option>)}
-              </Select>
-            </Field>
+                👤 1-on-1 Individual Student
+              </button>
+            </div>
           </div>
+
+          {scheduleForm.meetingType === 'BATCH' ? (
+            <div className="form-grid">
+              <Field label="Program / Degree" required>
+                <Select 
+                  value={scheduleForm.programId} 
+                  onChange={(e) => setScheduleForm(f => ({ ...f, programId: e.target.value }))}
+                  required
+                >
+                  <option value="">-- Select Program --</option>
+                  {programs.map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
+                </Select>
+              </Field>
+
+              <Field label="Target Batch / Cohort" required>
+                <Select 
+                  value={scheduleForm.batchId} 
+                  onChange={(e) => setScheduleForm(f => ({ ...f, batchId: e.target.value }))}
+                  required
+                >
+                  <option value="">-- Select Batch --</option>
+                  {batches
+                    .filter(b => !scheduleForm.programId || b.programId === scheduleForm.programId)
+                    .map(b => <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.batchCode}</option>)}
+                </Select>
+              </Field>
+            </div>
+          ) : (
+            <Field label="Select Student (1-on-1 Session)" required>
+              <Select 
+                value={scheduleForm.studentId} 
+                onChange={(e) => setScheduleForm(f => ({ ...f, studentId: e.target.value }))}
+                required
+              >
+                <option value="">-- Choose Enrolled Student --</option>
+                {allStudents.map(s => (
+                  <option key={s.id || s._id} value={s.id || s._id}>
+                    {s.fullName} ({s.email || s.registrationId || 'Student'})
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
 
           <div className="form-grid">
             <Field label="Subject / Course" required>
@@ -419,7 +527,19 @@ export default function AdminDashboard() {
               </Select>
             </Field>
 
-            <Field label="Call Slot (5 Calls / Course)" required>
+            <Field label="Faculty / Host (Optional)">
+              <Select 
+                value={scheduleForm.facultyId} 
+                onChange={(e) => setScheduleForm(f => ({ ...f, facultyId: e.target.value }))}
+              >
+                <option value="">-- Default / Organization Host --</option>
+                {faculties.map(fac => <option key={fac.id || fac._id} value={fac.id || fac._id}>{fac.fullName || fac.name}</option>)}
+              </Select>
+            </Field>
+          </div>
+
+          <div className="form-grid">
+            <Field label="Call Slot (5 Calls Policy)" required>
               <Select 
                 value={scheduleForm.sessionNumber} 
                 onChange={(e) => setScheduleForm(f => ({ ...f, sessionNumber: e.target.value }))}
@@ -432,9 +552,7 @@ export default function AdminDashboard() {
                 <option value="5">Call 5 of 5 (Final Exam Prep & Review)</option>
               </Select>
             </Field>
-          </div>
 
-          <div className="form-grid">
             <Field label="Scheduled Date" required>
               <Input 
                 type="date" 
@@ -443,7 +561,9 @@ export default function AdminDashboard() {
                 required 
               />
             </Field>
+          </div>
 
+          <div className="form-grid">
             <Field label="Scheduled Time" required>
               <Input 
                 type="text" 
@@ -453,21 +573,21 @@ export default function AdminDashboard() {
                 required 
               />
             </Field>
-          </div>
 
-          <Field label="Zoom / Meeting URL">
-            <Input 
-              type="url" 
-              placeholder="https://zoom.us/j/..."
-              value={scheduleForm.meetingUrl} 
-              onChange={(e) => setScheduleForm(f => ({ ...f, meetingUrl: e.target.value }))}
-            />
-          </Field>
+            <Field label="Zoom / Meeting URL">
+              <Input 
+                type="url" 
+                placeholder="https://zoom.us/j/..."
+                value={scheduleForm.meetingUrl} 
+                onChange={(e) => setScheduleForm(f => ({ ...f, meetingUrl: e.target.value }))}
+              />
+            </Field>
+          </div>
 
           <Field label="Session Agenda / Discussion Topic">
             <Textarea 
               rows={2}
-              placeholder="e.g. Syllabus Q&A, Case study analysis..."
+              placeholder="e.g. Syllabus Q&A, Case study analysis, 1-on-1 academic consultation..."
               value={scheduleForm.agenda} 
               onChange={(e) => setScheduleForm(f => ({ ...f, agenda: e.target.value }))}
             />
@@ -475,7 +595,14 @@ export default function AdminDashboard() {
 
           <div className="row" style={{ justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
             <Button type="button" variant="outline" onClick={() => setScheduleModalOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="primary" loading={savingSession}>Schedule Call for Batch</Button>
+            <Button 
+              type="submit" 
+              variant="primary" 
+              loading={savingSession} 
+              style={{ background: scheduleForm.meetingType === 'SINGLE_STUDENT' ? '#be185d' : '#2563eb' }}
+            >
+              {scheduleForm.meetingType === 'SINGLE_STUDENT' ? 'Schedule 1-on-1 Session' : 'Schedule Batch Call'}
+            </Button>
           </div>
         </form>
       </Modal>

@@ -2,11 +2,12 @@
    Modal — Premium with Gradient Border, Blur Entrance, Noise Backdrop
    ========================================================================== */
 
-.modal-root { position: relative; z-index: 100; }
+.modal-root { position: fixed; inset: 0; z-index: 99999 !important; }
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
+  z-index: 99999 !important;
   background: rgba(6, 9, 17, 0.8);
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
@@ -21,11 +22,13 @@
 .modal-scrollwrap {
   position: fixed;
   inset: 0;
+  z-index: 100000 !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sp-5);
+  padding: clamp(16px, 3vw, 32px);
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .modal-panel {
