@@ -54,7 +54,7 @@ export default function Results() {
       studentsApi.getEnrollments(userId),
       client.get(`/students/${userId}/programs`),
       programsApi.list({ limit: 100 })
-    ]).then(([res1, res2, res3, res4, res5, res6]) => {
+    ]).then(([res1, res2, res3, res4, res5, res6, res7]) => {
       if (res1.status === 'fulfilled') setResults(res1.value.data?.data || []);
       if (res2.status === 'fulfilled') setAttempts(res2.value.data?.data || []);
       if (res3.status === 'fulfilled') setVideoQuizzes(res3.value.data?.data || []);
