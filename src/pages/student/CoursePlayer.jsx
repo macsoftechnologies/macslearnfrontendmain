@@ -7,6 +7,7 @@ import * as progressApi from '../../api/progress';
 import * as coursesApi from '../../api/courses';
 import * as certificatesApi from '../../api/certificates';
 import * as examsApi from '../../api/exams';
+import { useAuth } from '../../contexts/AuthContext';
 import client, { extractErrorMessages, buildStaticUrl } from '../../api/client';
 import Button from '../../components/ui/Button';
 import PageLoader from '../../components/ui/PageLoader';
@@ -346,6 +347,7 @@ function DynamicStudentWatermark({ user }) {
 
 export default function CoursePlayer() {
   const { id: courseId } = useParams();
+  const { user } = useAuth();
 
   // Core data
   const [modules, setModules] = useState([]);
@@ -444,10 +446,8 @@ export default function CoursePlayer() {
     try {
       localStorage.setItem(`watch_pos_${courseId}_${lessonId}`, String(seconds));
     } catch (e) {}
-    console.log('[WATCH_TIME] Saving watch time:', { lessonId, courseId, modId, seconds });
     progressApi.updateWatchTime(lessonId, courseId, modId || '', seconds)
-      .then((res) => console.log('[WATCH_TIME] Saved successfully:', res.data))
-      .catch((err) => console.error('[WATCH_TIME] Error saving watch time:', err?.response?.data || err?.message));
+      .catch(() => {});
   };
 
   const performResume = (force = false) => {
@@ -456,7 +456,6 @@ export default function CoursePlayer() {
     if (!force && hasResumedLessonRef.current === activeLessonId) return;
 
     const saved = getSavedWatchPosition(activeLessonId);
-    console.log('[WATCH_TIME] Attempting resume for lesson:', activeLessonId, 'savedSeconds:', saved);
     if (saved > 0) {
       maxWatchedSecondsRef.current = Math.max(maxWatchedSecondsRef.current, saved);
       lastPlayedSecondsRef.current = saved;
@@ -467,7 +466,6 @@ export default function CoursePlayer() {
         if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
           isSeekingRef.current = true;
           playerRef.current.seekTo(saved, 'seconds');
-          console.log('[WATCH_TIME] seekTo executed to second:', saved);
           setTimeout(() => {
             isSeekingRef.current = false;
           }, 1500);
