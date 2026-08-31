@@ -548,11 +548,32 @@ function ContentTab({ courseId, base, canManageContent }) {
   // Drag and Drop State
   const [dragState, setDragState] = useState({ moduleId: null, fromIndex: null, overIndex: null });
 
-  const loadModules = () => {
+  const loadModules = async () => {
     setLoading(true);
-    contentApi.listModules(courseId).then((res) => setModules(res.data?.data || [])).finally(() => setLoading(false));
+    try {
+      const res = await contentApi.listModules(courseId);
+      const mods = res.data?.data || [];
+      setModules(mods);
+      if (mods.length > 0) {
+        const lessonMap = {};
+        await Promise.all(
+          mods.map(async (mod) => {
+            const mId = mod._id || mod.id;
+            const lRes = await contentApi.listLessons(courseId, mId).catch(() => null);
+            lessonMap[mId] = lRes?.data?.data || [];
+          })
+        );
+        setLessonsByModule(lessonMap);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
-  useEffect(loadModules, [courseId]);
+  useEffect(() => {
+    loadModules();
+  }, [courseId]);
 
   const toggleExpand = async (moduleId) => {
     setExpanded((e) => ({ ...e, [moduleId]: !e[moduleId] }));
