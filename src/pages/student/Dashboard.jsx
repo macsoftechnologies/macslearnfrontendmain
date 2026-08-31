@@ -57,7 +57,7 @@ export default function StudentDashboard() {
           <h1 className="page-title">Hi {user?.fullName?.split(' ')[0] || 'there'} 👋</h1>
           <p className="page-subtitle">Pick up where you left off.</p>
         </div>
-        <Link to="/student/programs"><Button>Browse Programs</Button></Link>
+        <Link to="/student/programs"><Button>My Program</Button></Link>
       </div>
 
       

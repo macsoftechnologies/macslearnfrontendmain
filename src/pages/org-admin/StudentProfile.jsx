@@ -782,16 +782,21 @@ export default function StudentProfile() {
                                             const vqPassedCount = vqExams.filter(e => e.isPassed).length;
                                             const vqTotalCount = vqExams.length;
 
-                                            // Calculate live 70/30 score
-                                            let autoAssessment70 = enrollment.grade?.assignmentScore !== undefined && enrollment.grade?.assignmentScore !== null
+                                            const isDminProg = /ministry|dmin/i.test(student?.program?.name || student?.degree || student?.department || '');
+                                            const ciaW = isDminProg ? 55 : 65;
+                                            const attW = 5;
+                                            const examW = isDminProg ? 40 : 30;
+
+                                            // Calculate live score
+                                            let autoAssessment = enrollment.grade?.assignmentScore !== undefined && enrollment.grade?.assignmentScore !== null
                                               ? Number(enrollment.grade.assignmentScore)
-                                              : (vqTotalCount > 0 ? Math.round(((vqPassedCount / vqTotalCount) * 65 + 5) * 100) / 100 : 0);
+                                              : (vqTotalCount > 0 ? Math.round(((vqPassedCount / vqTotalCount) * ciaW * 100)) / 100 : 0);
 
-                                            let finalExamScore30 = enrollment.grade?.finalExamScore !== undefined && enrollment.grade?.finalExamScore !== null
+                                            let finalExamScoreWeighted = enrollment.grade?.finalExamScore !== undefined && enrollment.grade?.finalExamScore !== null
                                               ? Number(enrollment.grade.finalExamScore)
-                                              : (finalExams.length > 0 && finalExams[0].marksObtained !== undefined ? Math.round((Number(finalExams[0].marksObtained) / (finalExams[0].exam?.totalMarks || 100)) * 30 * 100) / 100 : 0);
+                                              : (finalExams.length > 0 && finalExams[0].marksObtained !== undefined ? Math.round((Number(finalExams[0].marksObtained) / (finalExams[0].exam?.totalMarks || 100)) * examW * 100) / 100 : 0);
 
-                                            const compTotal = Math.min(100, Math.round((autoAssessment70 + finalExamScore30) * 100) / 100);
+                                            const compTotal = Math.min(100, Math.round((autoAssessment + attW + finalExamScoreWeighted) * 100) / 100);
                                             const getGradeLetter = (s) => s >= 80 ? 'A+' : s >= 75 ? 'A' : s >= 70 ? 'A-' : s >= 65 ? 'B+' : s >= 60 ? 'B' : s >= 55 ? 'B-' : s >= 50 ? 'C+' : s >= 45 ? 'C' : s >= 40 ? 'C-' : 'F';
                                             const compGrade = getGradeLetter(compTotal);
 
@@ -814,18 +819,18 @@ export default function StudentProfile() {
                                                 </div>
 
                                                 <div style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-3)', backgroundColor: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd' }}>
-                                                  <h5 style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: '#0369a1', marginBottom: 'var(--sp-2)' }}>65 / 5 / 30 Academic Grade Weightage</h5>
+                                                  <h5 style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: '#0369a1', marginBottom: 'var(--sp-2)' }}>{ciaW} / {attW} / {examW} Academic Grade Weightage</h5>
                                                   <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', marginBottom: 4 }}>
-                                                    <span>Internal Continuous Assessment (65%):</span>
-                                                    <strong style={{ color: '#4f46e5' }}>{enrollment.grade?.assignmentScore ?? (vqTotalCount > 0 ? Math.round((vqPassedCount / vqTotalCount) * 65 * 100) / 100 : 0)} / 65</strong>
+                                                    <span>Internal Continuous Assessment ({ciaW}%):</span>
+                                                    <strong style={{ color: '#4f46e5' }}>{enrollment.grade?.assignmentScore ?? autoAssessment} / {ciaW}</strong>
                                                   </div>
                                                   <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', marginBottom: 4 }}>
-                                                    <span>Live Session Attendance (5%):</span>
-                                                    <strong style={{ color: '#059669' }}>{enrollment.grade?.attendanceScore ?? 5} / 5</strong>
+                                                    <span>Live Session Attendance ({attW}%):</span>
+                                                    <strong style={{ color: '#059669' }}>{enrollment.grade?.attendanceScore ?? attW} / {attW}</strong>
                                                   </div>
                                                   <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', marginBottom: 4 }}>
-                                                    <span>Course Final Exam (30%):</span>
-                                                    <strong>{finalExamScore30} / 30</strong>
+                                                    <span>Course Final Exam ({examW}%):</span>
+                                                    <strong>{finalExamScoreWeighted} / {examW}</strong>
                                                   </div>
                                                   <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)', fontWeight: 700, borderTop: '1px dashed #7dd3fc', paddingTop: 4 }}>
                                                     <span>Total Composite Score:</span>

@@ -138,20 +138,21 @@ function AnimatedVideoOverlay({ overlay, onDismiss }) {
         <div
           style={{
             position: 'relative',
-            background: 'rgba(15, 23, 42, 0.88)',
+            background: 'rgba(15, 23, 42, 0.92)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
+            border: '2px solid rgba(255, 255, 255, 0.35)',
             borderRadius: '24px',
-            padding: position === 'center' ? '24px 36px' : '14px 20px',
+            padding: position === 'center' ? '20px 28px' : '14px 20px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 12,
-            maxWidth: position === 'center' ? '460px' : '220px',
+            maxWidth: position === 'center' ? 'min(90vw, 760px)' : '320px',
+            maxHeight: position === 'center' ? 'min(84vh, 560px)' : 'auto',
             overflow: 'hidden',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,255,255,0.4)',
+            boxShadow: '0 30px 60px rgba(0,0,0,0.85), inset 0 1px 2px rgba(255,255,255,0.4)',
           }}
         >
           {/* Shimmer Light Sweep */}
@@ -182,8 +183,8 @@ function AnimatedVideoOverlay({ overlay, onDismiss }) {
                 background: 'rgba(0,0,0,0.6)',
                 border: 'none',
                 borderRadius: '50%',
-                width: 24,
-                height: 24,
+                width: 28,
+                height: 28,
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
@@ -194,19 +195,20 @@ function AnimatedVideoOverlay({ overlay, onDismiss }) {
               }}
               title="Close overlay"
             >
-              <X size={14} />
+              <X size={16} />
             </button>
           )}
 
-          {/* Centered Image / Logo (Larger Size) */}
+          {/* Centered Image / Overlay (Bigger & High-Res) */}
           <img
             src={imageUrl}
-            alt="Video Logo"
+            alt="Video Overlay"
             style={{
-              maxHeight: position === 'center' ? '220px' : '90px',
+              maxHeight: position === 'center' ? 'min(68vh, 460px)' : '160px',
               maxWidth: '100%',
               objectFit: 'contain',
-              filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))',
+              borderRadius: '8px',
+              filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.7))',
             }}
           />
 
@@ -284,6 +286,61 @@ const getPlayerUrl = (url) => {
   if (trimmed.startsWith('http')) return { url: trimmed, hash };
   return { url: buildStaticUrl(trimmed), hash };
 };
+
+// --- Floating Dynamic Anti-Piracy Watermark Component ---
+
+function DynamicStudentWatermark({ user }) {
+  const [positionIdx, setPositionIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPositionIdx((prev) => (prev + 1) % 4);
+    }, 20000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!user) return null;
+
+  const positions = [
+    { top: 16, left: 16 },
+    { bottom: 50, right: 16 },
+    { top: 16, right: 120 },
+    { bottom: 50, left: 16 },
+  ];
+
+  const currentPos = positions[positionIdx] || positions[0];
+  const userTag = user.fullName || user.email || 'Student';
+  const idTag = user.id || user._id ? String(user.id || user._id).slice(-6) : '';
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        ...currentPos,
+        pointerEvents: 'none',
+        zIndex: 75,
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '3px 8px',
+        background: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(3px)',
+        borderRadius: '4px',
+        border: '1px solid rgba(255, 255, 255, 0.15)',
+        color: 'rgba(255, 255, 255, 0.55)',
+        fontSize: '11px',
+        fontWeight: 600,
+        letterSpacing: '0.4px',
+        fontFamily: 'monospace',
+        transition: 'all 1.2s ease-in-out',
+      }}
+    >
+      <span>🔒 {userTag} {idTag ? `(${idTag})` : ''}</span>
+    </div>
+  );
+}
 
 // --- Main Component ---
 
@@ -363,9 +420,81 @@ export default function CoursePlayer() {
   const lastPlayedSecondsRef = useRef(0);
   const maxWatchedSecondsRef = useRef(0);
   const isSeekingRef = useRef(false);
+  const hasResumedLessonRef = useRef(null);
   const playerRef = useRef(null);
   const videoContainerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const getSavedWatchPosition = (lessonId) => {
+    if (!lessonId) return 0;
+    let localSec = 0;
+    try {
+      const val = localStorage.getItem(`watch_pos_${courseId}_${lessonId}`);
+      if (val) localSec = Number(val) || 0;
+    } catch (e) {}
+    const lessonProg = progress?.completedLessons?.find(
+      (l) => (l.lessonId?._id || l.lessonId || l.id) === lessonId
+    );
+    const serverSec = Number(lessonProg?.watchedSeconds || 0);
+    return Math.max(localSec, serverSec);
+  };
+
+  const saveWatchPosition = (lessonId, modId, seconds) => {
+    if (!lessonId || !courseId || seconds <= 0) return;
+    try {
+      localStorage.setItem(`watch_pos_${courseId}_${lessonId}`, String(seconds));
+    } catch (e) {}
+    console.log('[WATCH_TIME] Saving watch time:', { lessonId, courseId, modId, seconds });
+    progressApi.updateWatchTime(lessonId, courseId, modId || '', seconds)
+      .then((res) => console.log('[WATCH_TIME] Saved successfully:', res.data))
+      .catch((err) => console.error('[WATCH_TIME] Error saving watch time:', err?.response?.data || err?.message));
+  };
+
+  const performResume = (force = false) => {
+    if (!activeLesson) return;
+    const activeLessonId = activeLesson._id || activeLesson.id;
+    if (!force && hasResumedLessonRef.current === activeLessonId) return;
+
+    const saved = getSavedWatchPosition(activeLessonId);
+    console.log('[WATCH_TIME] Attempting resume for lesson:', activeLessonId, 'savedSeconds:', saved);
+    if (saved > 0) {
+      maxWatchedSecondsRef.current = Math.max(maxWatchedSecondsRef.current, saved);
+      lastPlayedSecondsRef.current = saved;
+      lastSavedTimeRef.current = saved;
+      hasResumedLessonRef.current = activeLessonId;
+
+      const attemptSeek = (retries = 8) => {
+        if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+          isSeekingRef.current = true;
+          playerRef.current.seekTo(saved, 'seconds');
+          console.log('[WATCH_TIME] seekTo executed to second:', saved);
+          setTimeout(() => {
+            isSeekingRef.current = false;
+          }, 1500);
+        } else if (retries > 0) {
+          setTimeout(() => attemptSeek(retries - 1), 250);
+        }
+      };
+      attemptSeek();
+    } else {
+      hasResumedLessonRef.current = activeLessonId;
+    }
+  };
+
+  // Resume playback effect: whenever activeLesson or progress changes, resume to saved position
+  useEffect(() => {
+    performResume();
+  }, [progress, activeLesson]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (activeLesson && lastPlayedSecondsRef.current > 0) {
+        saveWatchPosition(activeLesson._id || activeLesson.id, activeLesson.moduleId, lastPlayedSecondsRef.current);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [activeLesson, courseId]);
 
 
   const toggleFullscreen = () => {
@@ -538,13 +667,28 @@ export default function CoursePlayer() {
   const handleLessonChange = (lesson, modId) => {
     setActiveLesson({ ...lesson, moduleId: modId });
     setActiveTab('lessons');
+    hasResumedLessonRef.current = null;
     maxWatchedSecondsRef.current = 0;
     lastPlayedSecondsRef.current = 0;
+    lastSavedTimeRef.current = 0;
     loadQuizzes(modId, lesson._id || lesson.id);
   };
 
   const goToLesson = (lesson) => {
     if (lesson) handleLessonChange(lesson, lesson.moduleId);
+  };
+
+  const handlePause = () => {
+    setPlaying(false);
+    if (activeLesson && lastPlayedSecondsRef.current > 0) {
+      lastSavedTimeRef.current = lastPlayedSecondsRef.current;
+      progressApi.updateWatchTime(
+        activeLesson._id || activeLesson.id,
+        courseId,
+        activeLesson.moduleId,
+        lastPlayedSecondsRef.current
+      ).catch(() => {});
+    }
   };
 
   // --- Video progress handlers ---
@@ -598,25 +742,24 @@ export default function CoursePlayer() {
       markComplete(activeLesson._id || activeLesson.id);
     }
 
-    if (activeLesson && Math.abs(currentSeconds - lastSavedTimeRef.current) >= 10 && !isSeekingRef.current) {
+    if (activeLesson && Math.abs(currentSeconds - lastSavedTimeRef.current) >= 5 && !isSeekingRef.current) {
       lastSavedTimeRef.current = currentSeconds;
-      progressApi.updateWatchTime(activeLesson._id || activeLesson.id, courseId, activeLesson.moduleId, currentSeconds).catch(() => {});
+      saveWatchPosition(activeLesson._id || activeLesson.id, activeLesson.moduleId, currentSeconds);
     }
   };
 
   const handleReady = () => {
-    if (progress && activeLesson) {
-      const activeLessonId = activeLesson._id || activeLesson.id;
-      const lessonProg = progress.completedLessons?.find(l => (l.lessonId?._id || l.lessonId || l.id) === activeLessonId);
-      if (lessonProg && lessonProg.watchedSeconds && lessonProg.watchedSeconds > 0) {
-        maxWatchedSecondsRef.current = lessonProg.watchedSeconds;
-        setTimeout(() => {
-          playerRef.current?.seekTo(lessonProg.watchedSeconds, 'seconds');
-          lastSavedTimeRef.current = lessonProg.watchedSeconds;
-          isSeekingRef.current = true;
-          setTimeout(() => isSeekingRef.current = false, 1000);
-        }, 300);
-      }
+    performResume(true);
+  };
+
+  const handleStart = () => {
+    performResume(true);
+  };
+
+  const handlePlay = () => {
+    setPlaying(true);
+    if (lastPlayedSecondsRef.current === 0) {
+      performResume();
     }
   };
 
@@ -771,28 +914,36 @@ export default function CoursePlayer() {
                   {/* Video Player */}
                   {activeLesson.videoUrl && (() => {
                     const playerInfo = getPlayerUrl(activeLesson.videoUrl);
-                    const overlay = activeLesson.overlayConfig;
-                    const overlayStart = overlay?.startSecond ?? 29;
-                    const overlayDuration = overlay?.durationSeconds ?? 5;
+                    const overlayData = activeLesson.overlayConfig;
+                    const overlayList = Array.isArray(overlayData) 
+                      ? overlayData 
+                      : (overlayData && typeof overlayData === 'object' && overlayData.imageUrl ? [overlayData] : []);
+                    
                     const activeLId = activeLesson._id || activeLesson.id;
-                    const isOverlayActive = overlay && 
-                      overlay.enabled !== false && 
-                      overlay.imageUrl && 
-                      dismissedOverlayLessonId !== activeLId &&
-                      currentPlaybackSeconds >= overlayStart && 
-                      currentPlaybackSeconds < (overlayStart + overlayDuration);
+                    const activeOverlay = dismissedOverlayLessonId !== activeLId 
+                      ? overlayList.find(ov => {
+                          if (!ov || ov.enabled === false || !ov.imageUrl) return false;
+                          const start = ov.startSecond ?? 29;
+                          const dur = ov.durationSeconds ?? 5;
+                          return currentPlaybackSeconds >= start && currentPlaybackSeconds < (start + dur);
+                        })
+                      : null;
+                    const isOverlayActive = !!activeOverlay;
 
                     return (
                       <div 
                         ref={videoContainerRef} 
                         className="player__video-wrapper"
+                        onContextMenu={(e) => e.preventDefault()}
                         style={{
                           position: 'relative',
                           aspectRatio: isFullscreen ? 'auto' : '16/9',
                           height: isFullscreen ? '100vh' : 'auto',
                           background: '#000',
                           borderRadius: isFullscreen ? 0 : '12px',
-                          overflow: 'hidden'
+                          overflow: 'hidden',
+                          userSelect: 'none',
+                          WebkitUserSelect: 'none'
                         }}
                       >
                         <Player
@@ -802,16 +953,27 @@ export default function CoursePlayer() {
                           playing={playing}
                           onProgress={handleProgress}
                           onReady={handleReady}
-                          onPlay={() => setPlaying(true)}
-                          onPause={() => setPlaying(false)}
+                          onStart={handleStart}
+                          onPlay={handlePlay}
+                          onPause={handlePause}
                           width="100%"
                           height="100%"
                           style={{ position: 'absolute', top: 0, left: 0, pointerEvents: activeQuiz ? 'none' : 'auto' }}
                           config={{
-                            youtube: { playerVars: { rel: 0, showinfo: 0 } },
+                            file: {
+                              attributes: {
+                                controlsList: 'nodownload noplaybackrate',
+                                disablePictureInPicture: true,
+                                onContextMenu: (e) => e.preventDefault(),
+                              }
+                            },
+                            youtube: { playerVars: { rel: 0, showinfo: 0, modestbranding: 1 } },
                             vimeo: { playerOptions: { dnt: true, title: false, byline: false, portrait: false, background: false } }
                           }}
                         />
+
+                        {/* Anti-Piracy Dynamic Watermark */}
+                        <DynamicStudentWatermark user={user} />
 
                         {/* Fullscreen Button Overlay (Guarantees logo overlay stays visible in Fullscreen) */}
                         {!activeQuiz && (
@@ -847,7 +1009,7 @@ export default function CoursePlayer() {
                         {/* Animated Timed Logo Overlay */}
                         {isOverlayActive && (
                           <AnimatedVideoOverlay
-                            overlay={overlay}
+                            overlay={activeOverlay}
                             onDismiss={() => setDismissedOverlayLessonId(activeLId)}
                           />
                         )}

@@ -178,11 +178,11 @@ export default function ProgramOverview() {
 
   return (
     <div className="page">
-      <div className="page-head" style={{ marginBottom: 'var(--sp-4)' }}>
+      <div className="page-head" style={{ marginBottom: 'var(--sp-3)' }}>
         <div>
-          <span className="page-eyebrow">Program Overview</span>
-          <h1 className="page-title" style={{ fontSize: 'var(--fs-3xl)' }}>{program.name}</h1>
-          <p className="page-subtitle" style={{ fontSize: 'var(--fs-base)', marginTop: '4px' }}>
+          <span className="page-eyebrow" style={{ fontSize: '11px' }}>Program Overview</span>
+          <h1 className="page-title" style={{ fontSize: '1.45rem', fontWeight: 800, margin: '2px 0 4px' }}>{program.name}</h1>
+          <p className="page-subtitle" style={{ fontSize: '0.82rem', marginTop: '2px', color: 'var(--text-muted)' }}>
             {program.totalSubjects} Subjects
             {displayDuration && ` • ${displayDuration}`}
             {programEnrollment && (
@@ -205,6 +205,7 @@ export default function ProgramOverview() {
         </div>
         {(!isEnrolled || isProgramExpired) && !isProgramCompleted && (
           <Button 
+            size="sm"
             disabled={selectedCourses.size === 0}
             onClick={() => setEnrollModalOpen(true)}
           >
@@ -214,11 +215,11 @@ export default function ProgramOverview() {
         {isProgramCompleted && (
           <div className="row" style={{ gap: '8px' }}>
             <Link to="/student/results">
-              <Button icon={Award}>View Grades & Results</Button>
+              <Button size="sm" icon={Award}>View Grades</Button>
             </Link>
             {(program?.certificateTemplateId || programEnrollment?.certificateUrl) && (
               <Link to="/student/certificates">
-                <Button variant="outline" icon={FileDown}>Download Certificate</Button>
+                <Button size="sm" variant="outline" icon={FileDown}>Certificate</Button>
               </Link>
             )}
           </div>
@@ -227,12 +228,12 @@ export default function ProgramOverview() {
 
       {/* PROGRAM COMPLETED / REQUIREMENTS MET BANNER */}
       {isProgramCompleted && bannerVisible && (
-        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #22c55e', padding: '1.25rem 1.5rem', borderRadius: 'var(--radius-md)', color: '#166534', display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: 'var(--sp-6)', position: 'relative' }}>
-          <GraduationCap size={32} color="#16a34a" />
+        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #22c55e', padding: '10px 14px', borderRadius: '8px', color: '#166534', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', position: 'relative' }}>
+          <GraduationCap size={24} color="#16a34a" />
           <div style={{ flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>🎓 All Program Requirements Completed!</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#14532d' }}>
-              You have successfully completed all <strong>{completedCoursesCount} / {program.totalSubjects}</strong> courses for <strong>{program.name}</strong>. You can review your complete academic grades and results below.
+            <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700 }}>🎓 All Program Requirements Completed!</h3>
+            <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#14532d' }}>
+              You have successfully completed all <strong>{completedCoursesCount} / {program.totalSubjects}</strong> courses for <strong>{program.name}</strong>.
             </p>
           </div>
           <div className="row" style={{ gap: 'var(--sp-2)' }}>
@@ -243,7 +244,7 @@ export default function ProgramOverview() {
           </div>
           <button 
             onClick={() => setBannerVisible(false)}
-            style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#166534', opacity: 0.7 }}
+            style={{ position: 'absolute', top: '0.4rem', right: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', color: '#166534', opacity: 0.7 }}
           >
             ✕
           </button>
@@ -252,17 +253,17 @@ export default function ProgramOverview() {
 
       {/* EXPIRED BANNER */}
       {isProgramExpired && bannerVisible && (
-        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #f87171', padding: '1.25rem 1.5rem', borderRadius: 'var(--radius-md)', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: 'var(--sp-6)', position: 'relative' }}>
-          <AlertOctagon size={28} color="#dc2626" />
+        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #f87171', padding: '10px 14px', borderRadius: '8px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', position: 'relative' }}>
+          <AlertOctagon size={24} color="#dc2626" />
           <div style={{ flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Program Access Expired</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#7f1d1d' }}>
-              Your academic duration for this program ended on <strong>{expDate?.toLocaleDateString() || 'the deadline'}</strong>. To continue your learning journey and complete remaining courses, please select courses below to re-enroll.
+            <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700 }}>Program Access Expired</h3>
+            <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#7f1d1d' }}>
+              Your academic duration for this program ended on <strong>{expDate?.toLocaleDateString() || 'the deadline'}</strong>.
             </p>
           </div>
           <button 
             onClick={() => setBannerVisible(false)}
-            style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b', opacity: 0.7 }}
+            style={{ position: 'absolute', top: '0.4rem', right: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b', opacity: 0.7 }}
           >
             ✕
           </button>
@@ -271,17 +272,17 @@ export default function ProgramOverview() {
 
       {/* NEARING EXPIRY BANNER */}
       {!isProgramExpired && isProgramNearingExpiry && bannerVisible && (
-        <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d', padding: '1.25rem 1.5rem', borderRadius: 'var(--radius-md)', color: '#92400e', display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: 'var(--sp-6)', position: 'relative' }}>
-          <AlertTriangle size={28} color="#d97706" />
+        <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d', padding: '10px 14px', borderRadius: '8px', color: '#92400e', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', position: 'relative' }}>
+          <AlertTriangle size={24} color="#d97706" />
           <div style={{ flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Attention: Program Access Expiring Soon</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#78350f' }}>
-              You have <strong>{daysRemaining === 0 ? 'today only' : `${daysRemaining} days remaining`}</strong> (deadline: {expDate?.toLocaleDateString() || 'soon'}) to complete all subjects in this program. Please finish your lessons and exams.
+            <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700 }}>Attention: Program Access Expiring Soon</h3>
+            <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#78350f' }}>
+              You have <strong>{daysRemaining === 0 ? 'today only' : `${daysRemaining} days remaining`}</strong> to complete all subjects in this program.
             </p>
           </div>
           <button 
             onClick={() => setBannerVisible(false)}
-            style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#92400e', opacity: 0.7 }}
+            style={{ position: 'absolute', top: '0.4rem', right: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', color: '#92400e', opacity: 0.7 }}
           >
             ✕
           </button>
@@ -290,15 +291,15 @@ export default function ProgramOverview() {
 
       {/* REGULAR ENROLLED BANNER */}
       {isEnrolled && !isProgramExpired && !isProgramNearingExpiry && !isProgramCompleted && bannerVisible && (
-        <div style={{ backgroundColor: '#ecfdf5', border: '1px solid #34d399', padding: '1rem 1.5rem', borderRadius: 'var(--radius-md)', color: '#065f46', display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: 'var(--sp-6)', position: 'relative' }}>
-          <CheckCircle2 size={24} />
+        <div style={{ backgroundColor: '#ecfdf5', border: '1px solid #34d399', padding: '8px 14px', borderRadius: '8px', color: '#065f46', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', position: 'relative' }}>
+          <CheckCircle2 size={20} color="#059669" />
           <div style={{ flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: '1rem' }}>You are enrolled in this Program!</h3>
-            <p style={{ margin: 0, fontSize: '0.85rem' }}>Select additional courses below to purchase and add to your curriculum.</p>
+            <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700 }}>You are enrolled in this Program!</h3>
+            <p style={{ margin: 0, fontSize: '0.78rem', opacity: 0.9 }}>Select additional courses below to purchase and add to your curriculum.</p>
           </div>
           <button 
             onClick={() => setBannerVisible(false)}
-            style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#065f46', opacity: 0.7 }}
+            style={{ position: 'absolute', top: '0.4rem', right: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', color: '#065f46', opacity: 0.7 }}
           >
             ✕
           </button>
@@ -306,16 +307,16 @@ export default function ProgramOverview() {
       )}
 
       <div>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Academic Curriculum & Term Subjects</h2>
-            <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>Academic Curriculum & Term Subjects</h2>
+            <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               Select courses or enroll in your active term pack (5 subjects per term).
             </p>
           </div>
           {selectedCourses.size > 0 && (
-            <div className="row" style={{ gap: '1rem', alignItems: 'center', backgroundColor: 'var(--brand-surface, #f5f3ff)', padding: '0.5rem 1.25rem', borderRadius: '100px', border: '1px solid var(--brand, #7c3aed)' }}>
-              <span style={{ fontWeight: 700, color: 'var(--brand, #7c3aed)', fontSize: '0.9rem' }}>{selectedCourses.size} Courses Selected</span>
+            <div className="row" style={{ gap: '8px', alignItems: 'center', backgroundColor: 'var(--brand-surface, #f5f3ff)', padding: '4px 12px', borderRadius: '100px', border: '1px solid var(--brand, #7c3aed)' }}>
+              <span style={{ fontWeight: 700, color: 'var(--brand, #7c3aed)', fontSize: '0.82rem' }}>{selectedCourses.size} Courses Selected</span>
               <Button size="sm" onClick={() => setEnrollModalOpen(true)}>Proceed to Checkout</Button>
             </div>
           )}
@@ -323,8 +324,8 @@ export default function ProgramOverview() {
 
         {/* Chronological Semester Tabs */}
         {semestersList.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', paddingBottom: '0.75rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle, #e2e8f0)' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', paddingBottom: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-subtle, #e2e8f0)' }}>
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto' }}>
               {semestersList.map((sem, sIdx) => {
                 const semCoursesCount = (sem.courseIds || []).length || coursesList.filter(c => c.semesterId === sem.id).length || 5;
                 const isTabActive = selectedSemesterTab === sem.id;
@@ -333,9 +334,9 @@ export default function ProgramOverview() {
                     key={sem.id || sIdx}
                     onClick={() => setSelectedSemesterTab(sem.id)}
                     style={{
-                      padding: '8px 18px',
-                      borderRadius: '20px',
-                      fontSize: '0.88rem',
+                      padding: '5px 12px',
+                      borderRadius: '16px',
+                      fontSize: '0.8rem',
                       fontWeight: isTabActive ? 700 : 600,
                       background: isTabActive ? 'var(--brand, #7c3aed)' : '#f1f5f9',
                       color: isTabActive ? '#ffffff' : 'var(--text-secondary, #475569)',
@@ -343,7 +344,7 @@ export default function ProgramOverview() {
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
                       transition: 'all 0.15s',
-                      boxShadow: isTabActive ? '0 2px 8px rgba(124, 58, 237, 0.25)' : 'none'
+                      boxShadow: isTabActive ? '0 2px 6px rgba(124, 58, 237, 0.2)' : 'none'
                     }}
                   >
                     {(() => {
@@ -422,7 +423,7 @@ export default function ProgramOverview() {
             No courses available yet.
           </div>
         ) : (
-          <div className="course-grid">
+          <div className="course-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '14px', marginTop: '14px' }}>
             {coursesList
               .filter(course => {
                 if (selectedSemesterTab === 'ALL') return true;
@@ -488,13 +489,14 @@ export default function ProgramOverview() {
                     boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.08)' : undefined,
                     backgroundColor: isAlreadyEnrolled ? '#f0fdf4' : (selectedSemesterTab !== (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id) ? '#f8fafc' : undefined,
                     opacity: isAlreadyEnrolled ? 0.9 : (selectedSemesterTab !== (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id) ? 0.75 : 1,
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    borderRadius: '10px'
                   }}
                 >
                   <div 
                     className="course-card__thumb" 
                     style={{ 
-                      aspectRatio: '16/9', 
+                      height: 120,
                       backgroundColor: '#0f172a', 
                       position: 'relative', 
                       overflow: 'hidden', 
@@ -516,46 +518,46 @@ export default function ProgramOverview() {
                         }}
                       />
                     ) : (
-                      <BookOpen size={44} color="#a5b4fc" />
+                      <BookOpen size={36} color="#a5b4fc" />
                     )}
                   </div>
-                  <div className="course-card__body">
-                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3>{course.title}</h3>
+                  <div className="course-card__body" style={{ padding: '12px 14px' }}>
+                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                      <h3 style={{ fontSize: '0.92rem', fontWeight: 700, margin: '0 0 4px', lineHeight: 1.35 }}>{course.title}</h3>
                       <div style={{
-                        width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                        width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
                         border: isSelected || isAlreadyEnrolled ? 'none' : '2px solid #94a3b8',
                         backgroundColor: isAlreadyEnrolled ? '#22c55e' : isSelected ? '#7c3aed' : 'transparent',
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                       }}>
-                        {(isSelected || isAlreadyEnrolled) && <CheckCircle2 size={14} color="#fff" />}
+                        {(isSelected || isAlreadyEnrolled) && <CheckCircle2 size={12} color="#fff" />}
                       </div>
                     </div>
 
-                    <div className="course-card__meta">
-                      <div className="row" style={{ gap: 'var(--sp-2)', fontSize: 'var(--fs-xs)' }}>
+                    <div className="course-card__meta" style={{ gap: '6px', fontSize: '11px', margin: '4px 0 8px' }}>
+                      <div className="row" style={{ gap: '6px', fontSize: '11px' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>{course.credits || 0} Credits</span>
                         <span style={{ color: 'var(--border)' }}>|</span>
                         <span style={{ color: 'var(--color-primary-600)' }}>{course.examsCount || 0} Exams</span>
                       </div>
                       
                       {!isAlreadyEnrolled ? (
-                        <span className="course-card__price" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <span className="course-card__price" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '12px' }}>
                           {displayPrice}
                         </span>
                       ) : (
-                        <div style={{ marginTop: 'var(--sp-2)', fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <span style={{ fontWeight: 600, color: '#166534' }}>Enrolled</span>
+                        <div style={{ marginTop: '2px', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontWeight: 700, color: '#166534' }}>Enrolled</span>
                           {myEnrollment?.curriculum?.videos && (
-                            <div style={{ color: 'var(--brand)', fontWeight: 600 }}>
+                            <div style={{ color: 'var(--brand)', fontWeight: 600, fontSize: '11px' }}>
                               Videos Left: {Math.max(0, myEnrollment.curriculum.videos.total - myEnrollment.curriculum.videos.completed)}
                             </div>
                           )}
                         </div>
                       )}
                     </div>
-                    <div style={{ marginTop: 'var(--sp-3)' }}>
-                      <Button full size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); navigate(`/student/programs/${id}/courses/${courseId}`); }}>
+                    <div style={{ marginTop: 'auto', paddingTop: '4px' }}>
+                      <Button full size="sm" variant="outline" style={{ fontSize: '12px', padding: '5px 10px' }} onClick={(e) => { e.stopPropagation(); navigate(`/student/programs/${id}/courses/${courseId}`); }}>
                         Preview Course Details
                       </Button>
                     </div>

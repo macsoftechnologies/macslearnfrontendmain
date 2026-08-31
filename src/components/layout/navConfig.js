@@ -55,7 +55,7 @@ export const NAV = {
   ],
   STUDENT: [
     { to: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/student/programs', label: 'Browse Programs', icon: GraduationCap },
+    { to: '/student/programs', label: 'My Program', icon: GraduationCap },
     { to: '/student/my-courses', label: 'My Courses', icon: Library },
     { to: '/student/results', label: 'Results', icon: FileCheck2 },
     { to: '/student/certificates', label: 'Certificates', icon: Award },

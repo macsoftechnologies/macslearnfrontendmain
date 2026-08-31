@@ -123,20 +123,21 @@ function AnimatedVideoOverlay({ overlay, onDismiss }) {
         <div
           style={{
             position: 'relative',
-            background: 'rgba(15, 23, 42, 0.88)',
+            background: 'rgba(15, 23, 42, 0.92)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
+            border: '2px solid rgba(255, 255, 255, 0.35)',
             borderRadius: '24px',
-            padding: position === 'center' ? '24px 36px' : '14px 20px',
+            padding: position === 'center' ? '20px 28px' : '14px 20px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 12,
-            maxWidth: position === 'center' ? '460px' : '220px',
+            maxWidth: position === 'center' ? 'min(90vw, 760px)' : '320px',
+            maxHeight: position === 'center' ? 'min(84vh, 560px)' : 'auto',
             overflow: 'hidden',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,255,255,0.4)',
+            boxShadow: '0 30px 60px rgba(0,0,0,0.85), inset 0 1px 2px rgba(255,255,255,0.4)',
           }}
         >
           {/* Shimmer Light Sweep */}
@@ -167,8 +168,8 @@ function AnimatedVideoOverlay({ overlay, onDismiss }) {
                 background: 'rgba(0,0,0,0.6)',
                 border: 'none',
                 borderRadius: '50%',
-                width: 24,
-                height: 24,
+                width: 28,
+                height: 28,
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
@@ -179,19 +180,20 @@ function AnimatedVideoOverlay({ overlay, onDismiss }) {
               }}
               title="Close overlay"
             >
-              <X size={14} />
+              <X size={16} />
             </button>
           )}
 
           <img
             src={imageUrl}
-            alt="Institution Logo"
+            alt="Video Overlay"
             style={{
-              maxHeight: position === 'center' ? '220px' : '110px',
+              maxHeight: position === 'center' ? 'min(68vh, 460px)' : '160px',
               maxWidth: '100%',
               objectFit: 'contain',
               display: 'block',
-              filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))',
+              borderRadius: '8px',
+              filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.7))',
             }}
           />
 
@@ -604,16 +606,25 @@ export default function LessonPreview() {
   const hasAttachments = attachments.length > 0;
   const activeAttachment = attachments[selectedAttachmentIdx] || attachments[0] || null;
 
-  const overlay = lesson.overlayConfig;
-  const overlayStart = overlay?.startSecond ?? 29;
-  const overlayDuration = overlay?.durationSeconds ?? 5;
-  const isOverlayActive = forceOverlay || (
-    overlay && 
-    overlay.enabled !== false && 
-    overlay.imageUrl && 
-    currentSeconds >= overlayStart && 
-    currentSeconds < (overlayStart + overlayDuration)
-  );
+  const overlayData = lesson.overlayConfig;
+  const overlayList = Array.isArray(overlayData) 
+    ? overlayData 
+    : (overlayData && typeof overlayData === 'object' && overlayData.imageUrl ? [overlayData] : []);
+
+  const firstOverlay = overlayList[0] || null;
+  const overlayStart = firstOverlay?.startSecond ?? 29;
+  const overlayDuration = firstOverlay?.durationSeconds ?? 5;
+
+  const activeOverlay = forceOverlay 
+    ? (firstOverlay || overlayData) 
+    : overlayList.find(ov => {
+        if (!ov || ov.enabled === false || !ov.imageUrl) return false;
+        const start = ov.startSecond ?? 29;
+        const dur = ov.durationSeconds ?? 5;
+        return currentSeconds >= start && currentSeconds < (start + dur);
+      });
+
+  const isOverlayActive = !!activeOverlay;
 
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 64px)', background: 'var(--bg-app)', overflow: 'hidden' }}>
@@ -764,80 +775,11 @@ export default function LessonPreview() {
             <h1 style={{ fontSize: 'var(--fs-2xl, 28px)', fontWeight: 800, margin: 0, lineHeight: 1.3 }}>{lesson.title}</h1>
           </div>
 
-          {/* Quick Overlay Test Bar (if overlay is configured and video exists) */}
-          {videoUrl && overlay?.imageUrl && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(99,102,241,0.08))',
-              border: '1px solid rgba(59,130,246,0.2)',
-              borderRadius: '10px',
-              padding: '10px 16px',
-              marginBottom: '16px',
-              flexWrap: 'wrap',
-              gap: 8
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-xs)' }}>
-                <Sparkles size={16} color="var(--primary, #3b82f6)" />
-                <span>
-                  <strong>Timed Overlay Configured:</strong> Starts at <strong>{overlayStart}s</strong> (duration {overlayDuration}s). Current: <strong>{currentSeconds}s</strong>
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => {
-                    if (playerRef.current) {
-                      playerRef.current.seekTo(Math.max(0, overlayStart - 1), 'seconds');
-                      setPlaying(true);
-                    }
-                  }}
-                  style={{
-                    background: 'var(--primary, #3b82f6)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}
-                >
-                  <Play size={12} /> Seek to {overlayStart}s
-                </button>
-
-                <button
-                  onClick={() => {
-                    setForceOverlay(true);
-                    setTimeout(() => setForceOverlay(false), (overlayDuration || 5) * 1000);
-                  }}
-                  style={{
-                    background: 'rgba(59,130,246,0.15)',
-                    color: 'var(--primary, #3b82f6)',
-                    border: '1px solid rgba(59,130,246,0.3)',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}
-                >
-                  <Sparkles size={12} /> Test Animation Now
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* ---- STAGE 1: Video Player (If video exists) ---- */}
           {videoUrl && (
             <div 
               ref={videoContainerRef}
+              onContextMenu={(e) => e.preventDefault()}
               style={{
                 position: 'relative',
                 width: '100%',
@@ -847,7 +789,9 @@ export default function LessonPreview() {
                 marginBottom: isFullscreen ? 0 : 'var(--sp-6)',
                 borderRadius: isFullscreen ? 0 : '12px',
                 overflow: 'hidden',
-                boxShadow: isFullscreen ? 'none' : '0 12px 32px rgba(0,0,0,0.15)'
+                boxShadow: isFullscreen ? 'none' : '0 12px 32px rgba(0,0,0,0.15)',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
               }}
             >
               <Player
@@ -862,7 +806,14 @@ export default function LessonPreview() {
                 height="100%"
                 style={{ position: 'absolute', top: 0, left: 0 }}
                 config={{
-                  youtube: { playerVars: { rel: 0, showinfo: 0 } },
+                  file: {
+                    attributes: {
+                      controlsList: 'nodownload noplaybackrate',
+                      disablePictureInPicture: true,
+                      onContextMenu: (e) => e.preventDefault(),
+                    }
+                  },
+                  youtube: { playerVars: { rel: 0, showinfo: 0, modestbranding: 1 } },
                   vimeo: { playerOptions: { dnt: true, title: false, byline: false, portrait: false, background: false } }
                 }}
               />
@@ -899,7 +850,7 @@ export default function LessonPreview() {
               {/* Animated Timed Logo Overlay */}
               {isOverlayActive && (
                 <AnimatedVideoOverlay
-                  overlay={overlay}
+                  overlay={activeOverlay}
                   onDismiss={() => setForceOverlay(false)}
                 />
               )}

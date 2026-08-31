@@ -250,6 +250,12 @@ const ManualGradesPage = () => {
     });
   };
 
+  const selectedProgram = programs.find(p => p.id === programId || p._id === programId);
+  const isDmin = /ministry|dmin/i.test(selectedProgram?.name || '') || selectedSemester?.internalWeightage === 55;
+  const ciaWeight = selectedSemester?.internalWeightage ?? (isDmin ? 55 : 65);
+  const attWeight = selectedSemester?.attendanceWeightage ?? 5;
+  const examWeight = selectedSemester?.finalExamWeightage ?? (isDmin ? 40 : 30);
+
   const avgScore = totalStudents > 0 
     ? (students.reduce((acc, s) => acc + calculateTotal(s.assignmentScore, s.finalExamScore), 0) / totalStudents).toFixed(1)
     : 0;
@@ -259,9 +265,9 @@ const ManualGradesPage = () => {
       <div className="page-head">
         <div>
           <span className="page-eyebrow">Grading Management</span>
-          <h1 className="page-title">Grade Entry (65 / 5 / 30 Formula)</h1>
+          <h1 className="page-title">Grade Entry ({ciaWeight} / {attWeight} / {examWeight} Formula)</h1>
           <p className="page-subtitle">
-            Continuous Internal Assessment (65%) + Attendance (5%) + Final Exam (30%) = 100% Total Composite Grade.
+            Continuous Internal Assessment ({ciaWeight}%) + Attendance ({attWeight}%) + Final Exam ({examWeight}%) = 100% Total Composite Grade.
           </p>
         </div>
         {selectedIds.size > 0 && (
@@ -433,55 +439,55 @@ const ManualGradesPage = () => {
           },
           { 
             key: 'internal', 
-            header: 'Internal CIA (65%)', 
+            header: `Internal CIA (${ciaWeight}%)`, 
             render: (r) => (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input 
                   type="number" 
-                  max="65" 
+                  max={ciaWeight} 
                   min="0"
                   value={r.assignmentScore ?? ''} 
                   onChange={(e) => handleGradeChange(r.studentId, 'assignmentScore', e.target.value)}
                   style={{ width: '70px', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', fontSize: '13px', fontWeight: 700, color: '#4f46e5' }}
-                  placeholder="Max 65"
+                  placeholder={`Max ${ciaWeight}`}
                 />
-                <span style={{ fontSize: '11px', color: '#64748b' }}>/ 65</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>/ {ciaWeight}</span>
               </div>
             )
           },
           { 
             key: 'attendance', 
-            header: 'Attendance (5%)', 
+            header: `Attendance (${attWeight}%)`, 
             render: (r) => (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input 
                   type="number" 
-                  max="5" 
+                  max={attWeight} 
                   min="0"
                   value={r.attendanceScore ?? ''} 
                   onChange={(e) => handleGradeChange(r.studentId, 'attendanceScore', e.target.value)}
                   style={{ width: '60px', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', fontSize: '13px', fontWeight: 700, color: '#059669' }}
-                  placeholder="Max 5"
+                  placeholder={`Max ${attWeight}`}
                 />
-                <span style={{ fontSize: '11px', color: '#64748b' }}>/ 5</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>/ {attWeight}</span>
               </div>
             )
           },
           { 
             key: 'exam', 
-            header: 'Final Exam (30%)', 
+            header: `Final Exam (${examWeight}%)`, 
             render: (r) => (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input 
                   type="number" 
-                  max="30" 
+                  max={examWeight} 
                   min="0"
                   value={r.finalExamScore ?? ''} 
                   onChange={(e) => handleGradeChange(r.studentId, 'finalExamScore', e.target.value)}
                   style={{ width: '70px', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}
-                  placeholder="Max 30"
+                  placeholder={`Max ${examWeight}`}
                 />
-                <span style={{ fontSize: '11px', color: '#64748b' }}>/ 30</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>/ {examWeight}</span>
               </div>
             ) 
           },
