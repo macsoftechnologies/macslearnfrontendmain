@@ -1,9 +1,10 @@
+import aiRobotAvatar from '../../assets/ai-robot-avatar.jpg';
 import { createPortal } from 'react-dom';
 import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, BrainCircuit, BookOpen, Zap, ListChecks, X, CheckCircle, 
   AlertCircle, ArrowLeft, RotateCcw, Copy, Check, Search, HelpCircle, 
-  Award, Trophy, Volume2, VolumeX, Flame, Star, Loader2, Sparkle
+  Award, Trophy, Volume2, VolumeX, Flame, Star, Loader2, Sparkle, Bot, ArrowRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import client from '../../api/client';
@@ -16,6 +17,7 @@ export default function AIAssistantPanel({
   thinkingPhase,
   aiPanelOpen,
   aiData,
+  initialView = null,
   onOpen,
   onClose,
   onRefreshAiData,
@@ -49,8 +51,11 @@ export default function AIAssistantPanel({
       setIsSwitching(false);
       resetQuiz();
       stopSpeech();
+    } else if (initialView) {
+      setActiveView(initialView);
+      if (initialView === 'quiz') resetQuiz();
     }
-  }, [aiPanelOpen]);
+  }, [aiPanelOpen, initialView]);
 
   const payload = aiData?.data || aiData || {};
   const summary = payload?.summary || activeLesson?.description || 'No summary available for this lecture.';
@@ -232,7 +237,7 @@ export default function AIAssistantPanel({
             <div className="ai-synthesis-box">
               <div className="ai-neural-ring">
                 <div className="ai-neural-core">
-                  <BrainCircuit size={48} className="ai-pulse-icon" />
+                  <BrainCircuit size={24} className="ai-pulse-icon" />
                 </div>
                 <div className="ai-ring-orbit" />
                 <div className="ai-ring-orbit ai-ring-orbit--2" />
@@ -316,7 +321,7 @@ export default function AIAssistantPanel({
                 <div className="ai-hub-card ai-hub-card--purple" onClick={() => handleOpenSection('summary')}>
                   <div className="ai-card-top">
                     <div className="ai-card-iconwrap ai-card-iconwrap--purple">
-                      <BookOpen size={22} color="#fff" />
+                      <BookOpen size={16} color="#fff" />
                     </div>
                     <span className="ai-card-pill ai-card-pill--purple">Full Synthesis</span>
                   </div>
@@ -331,7 +336,7 @@ export default function AIAssistantPanel({
                 <div className="ai-hub-card ai-hub-card--blue" onClick={() => handleOpenSection('quiz')}>
                   <div className="ai-card-top">
                     <div className="ai-card-iconwrap ai-card-iconwrap--blue">
-                      <ListChecks size={22} color="#fff" />
+                      <ListChecks size={16} color="#fff" />
                     </div>
                     <span className="ai-card-pill ai-card-pill--blue">5 Random Qs</span>
                   </div>
@@ -346,7 +351,7 @@ export default function AIAssistantPanel({
                 <div className="ai-hub-card ai-hub-card--emerald" onClick={() => handleOpenSection('simplify')}>
                   <div className="ai-card-top">
                     <div className="ai-card-iconwrap ai-card-iconwrap--emerald">
-                      <Zap size={22} color="#fff" />
+                      <Zap size={16} color="#fff" />
                     </div>
                     <span className="ai-card-pill ai-card-pill--emerald">{backstory.length} Concepts</span>
                   </div>
@@ -361,7 +366,7 @@ export default function AIAssistantPanel({
                 <div className="ai-hub-card ai-hub-card--amber" onClick={() => handleOpenSection('revision')}>
                   <div className="ai-card-top">
                     <div className="ai-card-iconwrap ai-card-iconwrap--amber">
-                      <Sparkles size={22} color="#fff" />
+                      <Sparkles size={16} color="#fff" />
                     </div>
                     <span className="ai-card-pill ai-card-pill--amber">{keyTakeaways.length} Key Points</span>
                   </div>
@@ -601,26 +606,167 @@ export default function AIAssistantPanel({
 }
 
 export function AIFab({ activeTab, activeLesson, showAI, isThinking, onOpen, hasAiData }) {
-  if (activeTab !== 'lessons' || !activeLesson || showAI || isThinking || !hasAiData) return null;
+  if (activeTab !== 'lessons' || !activeLesson) return null;
 
   return (
-    <button 
-      className="ai-fab-onetouch" 
+    <div 
+      className="ai-companion-showcase" 
       onClick={onOpen}
-      title="One Touch Sacred AI Assistant"
+      
+      role="button"
+      tabIndex={0}
     >
-      <span className="ai-fab-onetouch__halo" />
-      <div className="ai-fab-onetouch__icon-wrap">
-        <Sparkles size={20} />
+      <div className="ai-companion-showcase__glow" />
+      
+      {/* Decorative Sparkles */}
+      <span className="ai-companion-showcase__deco-sparkle">✦</span>
+      <span className="ai-companion-showcase__deco-sparkle-2">✨</span>
+
+      {/* 3D AI Robot Avatar */}
+      <div className="ai-companion-showcase__avatar-wrap">
+        <div className="ai-companion-showcase__avatar-core">
+          <img src={aiRobotAvatar} alt="3D AI Assistant" className="ai-companion-showcase__avatar-img" />
+        </div>
+        <div className="ai-companion-showcase__avatar-ring" />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', lineHeight: 1.1 }}>
-        <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#fbbf24' }}>
-          One Touch
+
+      {/* Text Info */}
+      <div className="ai-companion-showcase__info">
+        <span className="ai-companion-showcase__tag">
+          ONE <span style={{ color: '#38bdf8' }}>TOUCH</span>
         </span>
-        <span style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>
-          AI Assistant
-        </span>
+        <h4 className="ai-companion-showcase__title">AI Assistant</h4>
+        <p className="ai-companion-showcase__sub">Ask • Learn • Go Further</p>
       </div>
-    </button>
+
+      {/* Action Button */}
+      <button className="ai-companion-showcase__btn" type="button">
+        <span style={{ fontSize: '14px' }}>👆</span>
+        <span>Tap to Ask</span>
+        <ArrowRight size={14} style={{ marginLeft: 2 }} />
+      </button>
+    </div>
+  );
+}
+
+
+export function AIStudyModulesRow({ onOpenView, hasAiData }) {
+  const items = [
+    {
+      key: 'summary',
+      icon: BookOpen,
+      iconColor: '#2563eb',
+      badgeBg: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(6, 182, 212, 0.15))',
+      gradient: 'linear-gradient(90deg, #2563eb, #06b6d4)',
+      bgHover: 'rgba(37, 99, 235, 0.04)',
+      borderHover: '#3b82f6',
+      pillBg: 'rgba(37, 99, 235, 0.1)',
+      pillColor: '#2563eb',
+      glow: 'rgba(37, 99, 235, 0.18)',
+      title: 'Executive Summary',
+      subtitle: 'Condensed lecture briefing & concepts',
+      pill: '📝 Briefing',
+      actionLabel: 'Read Summary',
+    },
+    {
+      key: 'quiz',
+      icon: Zap,
+      iconColor: '#7c3aed',
+      badgeBg: 'linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(236, 72, 153, 0.15))',
+      gradient: 'linear-gradient(90deg, #7c3aed, #ec4899)',
+      bgHover: 'rgba(124, 58, 237, 0.04)',
+      borderHover: '#8b5cf6',
+      pillBg: 'rgba(124, 58, 237, 0.1)',
+      pillColor: '#7c3aed',
+      glow: 'rgba(124, 58, 237, 0.18)',
+      title: 'Knowledge Check',
+      subtitle: 'Interactive 5-question arena',
+      pill: '🎯 5 Questions',
+      actionLabel: 'Take Quiz',
+    },
+    {
+      key: 'simplify',
+      icon: BrainCircuit,
+      iconColor: '#059669',
+      badgeBg: 'linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(16, 185, 129, 0.15))',
+      gradient: 'linear-gradient(90deg, #059669, #10b981)',
+      bgHover: 'rgba(5, 150, 105, 0.04)',
+      borderHover: '#10b981',
+      pillBg: 'rgba(5, 150, 105, 0.1)',
+      pillColor: '#059669',
+      glow: 'rgba(5, 150, 105, 0.18)',
+      title: 'Key Concepts',
+      subtitle: 'Core principles & historical backstory',
+      pill: '💡 Deep Dive',
+      actionLabel: 'Explore Concepts',
+    },
+    {
+      key: 'revision',
+      icon: ListChecks,
+      iconColor: '#d97706',
+      badgeBg: 'linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(245, 158, 11, 0.15))',
+      gradient: 'linear-gradient(90deg, #d97706, #f59e0b)',
+      bgHover: 'rgba(217, 119, 6, 0.04)',
+      borderHover: '#f59e0b',
+      pillBg: 'rgba(217, 119, 6, 0.1)',
+      pillColor: '#d97706',
+      glow: 'rgba(217, 119, 6, 0.18)',
+      title: 'Key Takeaways',
+      subtitle: 'Actionable review checklist',
+      pill: '🚀 Takeaways',
+      actionLabel: 'View Checklist',
+    }
+  ];
+
+  return (
+    <div className="ai-bottom-study-bar">
+      <div className="ai-bottom-study-bar__header">
+        <div className="ai-bottom-study-bar__title-wrap">
+          <span className="ai-bottom-study-bar__sparkle">✨</span>
+          <h4 className="ai-bottom-study-bar__title">AI Learning Modules for this Lecture</h4>
+        </div>
+        <span className="ai-bottom-study-bar__badge">One-Touch Active</span>
+      </div>
+
+      <div className="ai-bottom-study-bar__grid">
+        {items.map((item) => {
+          const IconComp = item.icon;
+          return (
+            <div
+              key={item.key}
+              className="ai-bottom-card"
+              onClick={() => onOpenView && onOpenView(item.key)}
+              role="button"
+              tabIndex={0}
+              style={{ 
+                '--card-gradient': item.gradient,
+                '--card-glow': item.glow,
+                '--card-bg-hover': item.bgHover,
+                '--card-border-hover': item.borderHover,
+                '--pill-bg': item.pillBg,
+                '--pill-color': item.pillColor,
+              }}
+            >
+              <div className="ai-bottom-card__top">
+                <div className="ai-bottom-card__icon-box" style={{ background: item.badgeBg, color: item.iconColor }}>
+                  <IconComp size={16} />
+                </div>
+                <span className="ai-bottom-card__pill">
+                  {item.pill}
+                </span>
+              </div>
+              <h5 className="ai-bottom-card__heading">{item.title}</h5>
+              <p className="ai-bottom-card__desc">{item.subtitle}</p>
+              <div className="ai-bottom-card__action">
+                <span>{item.actionLabel}</span>
+                <span className="ai-bottom-card__action-btn">
+                  <ArrowRight size={13} />
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

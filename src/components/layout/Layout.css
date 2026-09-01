@@ -17,9 +17,8 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
   position: relative;
-  scroll-behavior: smooth;
 }
 
 /* Subtle gradient wash at top of main content area */
@@ -37,8 +36,35 @@
 
 .app-shell__content {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   z-index: 1;
+  scroll-behavior: smooth;
+}
+
+/* ---------- Persistent Footer ---------- */
+.app-shell__footer {
+  flex-shrink: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--glass-heavy);
+  backdrop-filter: var(--backdrop-blur-heavy);
+  -webkit-backdrop-filter: var(--backdrop-blur-heavy);
+  position: relative;
+  z-index: 2;
+}
+
+.app-shell__footer-text {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  user-select: none;
 }
 
 .app-shell__scrim {

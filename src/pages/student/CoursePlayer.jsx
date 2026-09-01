@@ -18,7 +18,7 @@ import PlayerHeader from '../../components/course/PlayerHeader';
 import PlayerSidebar from '../../components/course/PlayerSidebar';
 import VideoQuizOverlay from '../../components/course/VideoQuizOverlay';
 import QuizResults from '../../components/course/QuizResults';
-import AIAssistantPanel, { AIFab } from '../../components/course/AIAssistantPanel';
+import AIAssistantPanel, { AIFab, AIStudyModulesRow } from '../../components/course/AIAssistantPanel';
 import AttachmentPreviewModal from '../../components/course/AttachmentPreviewModal';
 import ReactPlayer from 'react-player';
 const Player = ReactPlayer.default ? ReactPlayer.default : ReactPlayer;
@@ -389,6 +389,7 @@ export default function CoursePlayer() {
   const [aiData, setAiData] = useState(null);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [hasAiData, setHasAiData] = useState(false);
+  const [aiInitialView, setAiInitialView] = useState(null);
 
   useEffect(() => {
     const lessonId = activeLesson?.id || activeLesson?._id;
@@ -691,23 +692,29 @@ export default function CoursePlayer() {
 
   // --- Video progress handlers ---
 
+  // NOTE: Set to true for demo presentation to enable dragging/scrubbing forward freely
+  const ALLOW_DEMO_SEEKING = true;
+
   const handleProgress = (state) => {
     const currentSeconds = Math.floor(state.playedSeconds);
     const lastSeconds = lastPlayedSecondsRef.current;
 
-    // 1. Anti-Skipping / Forward Seeking Lock: Prevent jumping ahead of watched progress
-    if (currentSeconds > maxWatchedSecondsRef.current + 3 && !isSeekingRef.current) {
+    // Sync playback seconds state for timed image overlays
+    setCurrentPlaybackSeconds(currentSeconds);
+
+    // 1. Anti-Skipping / Forward Seeking Lock (Bypassed when ALLOW_DEMO_SEEKING is true)
+    if (!ALLOW_DEMO_SEEKING && currentSeconds > maxWatchedSecondsRef.current + 3 && !isSeekingRef.current) {
       playerRef.current?.seekTo(maxWatchedSecondsRef.current, 'seconds');
       toast('Forward skipping is locked. Please watch the lecture in full.', { id: 'no-skip-toast', icon: '🔒' });
       return;
     }
 
-    // Update furthest legitimate watched second
+    // Update furthest watched second
     if (currentSeconds > maxWatchedSecondsRef.current) {
       maxWatchedSecondsRef.current = currentSeconds;
     }
 
-    // 2. Video Quiz skip check
+    // 2. Video Quiz skip / trigger check
     if (currentSeconds > lastSeconds + 2) {
       const skippedQuiz = videoQuizzes
         .sort((a, b) => a.timestampSeconds - b.timestampSeconds)
@@ -718,7 +725,7 @@ export default function CoursePlayer() {
       if (skippedQuiz) {
         playerRef.current?.seekTo(skippedQuiz.timestampSeconds, 'seconds');
         setPlaying(false);
-        if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        // keep fullscreen active so question appears in fullscreen
         setActiveQuiz(skippedQuiz);
         setSelectedOption(null);
         setTheoryAnswer('');
@@ -730,7 +737,7 @@ export default function CoursePlayer() {
     const quiz = videoQuizzes.find(q => Math.floor(q.timestampSeconds) === currentSeconds);
     if (quiz && !answeredQuizzes.has(quiz._id || quiz.id)) {
       setPlaying(false);
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      // keep fullscreen active so question appears in fullscreen
       setActiveQuiz(quiz);
       setSelectedOption(null);
       setTheoryAnswer('');
@@ -909,7 +916,10 @@ export default function CoursePlayer() {
                 <div className="player__lesson-view">
                   <h1 className="player__lesson-title">{activeLesson.title}</h1>
 
-                  {/* Video Player */}
+                  {/* Video Player & AI Assistant Card (Side by Side in same panel) */}
+                  <div className="player__media-grid" style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', marginBottom: 'var(--sp-6)' }}>
+                    <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                      {/* Video Player */}
                   {activeLesson.videoUrl && (() => {
                     const playerInfo = getPlayerUrl(activeLesson.videoUrl);
                     const overlayData = activeLesson.overlayConfig;
@@ -1023,8 +1033,23 @@ export default function CoursePlayer() {
                       </div>
                     );
                   })()}
+                    </div>
 
+                    {/* Right-aligned AI Card inside the video panel */}
+                    <div className="player__ai-card-wrapper" style={{ flex: '0 0 176px', width: '176px', flexShrink: 0 }}>
+                      <AIFab
+                        activeTab={activeTab}
+                        activeLesson={activeLesson}
+                        showAI={showAI}
+                        isThinking={isThinking}
+                        onOpen={openAI}
+                        hasAiData={hasAiData}
+                      />
+                    </div>
+                  </div>
 
+                  {/* 4 Interactive AI Learning Modules Row */}
+                  <AIStudyModulesRow onOpenView={openAI} hasAiData={hasAiData} />
 
                   {/* Description */}
                   {activeLesson.description && (
@@ -1143,14 +1168,7 @@ export default function CoursePlayer() {
           )}
         </main>
 
-        <AIFab
-          activeTab={activeTab}
-          activeLesson={activeLesson}
-          showAI={showAI}
-          isThinking={isThinking}
-          onOpen={openAI}
-          hasAiData={hasAiData}
-        />
+        
 
         <AIAssistantPanel
           courseId={courseId}

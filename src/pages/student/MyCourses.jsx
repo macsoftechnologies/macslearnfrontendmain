@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Library, Folder, BookOpen, Clock, PlayCircle, GraduationCap, CheckCircle2, Sparkles, Layers } from 'lucide-react';
+import { Library, Folder, BookOpen, Clock, PlayCircle, GraduationCap, CheckCircle2, Sparkles, Layers, ChevronRight } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import * as studentsApi from '../../api/students';
 import { useAuth } from '../../contexts/AuthContext';
@@ -84,7 +84,7 @@ export default function MyCourses() {
       sorted.push({
         id: 'unassigned',
         semesterNumber: 9999,
-        name: 'Additional / Independent Courses',
+        name: 'Additional Courses',
         programName: '',
         items: unassigned,
       });
@@ -135,13 +135,12 @@ export default function MyCourses() {
         />
       ) : (
         <>
-          {/* Controls Bar: Search & Program/Semester Filter Pills */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: 'var(--sp-6)' }}>
+          {/* Top Controls: Search Bar & Program Switcher */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: 'var(--sp-6)' }}>
             <div style={{ maxWidth: 420 }}>
               <SearchBar value={search} onChange={setSearch} placeholder="Search your courses…" />
             </div>
 
-            {/* Program Switcher (if student has 2+ programs) */}
             {uniquePrograms.length > 1 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted, #64748b)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -189,197 +188,207 @@ export default function MyCourses() {
                 </div>
               </div>
             )}
-
-            {/* Semester Switcher */}
-            {semesterGroups.length > 1 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                <button
-                  onClick={() => setSelectedSemester('ALL')}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '20px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: '1px solid',
-                    transition: 'all 0.2s ease',
-                    background: selectedSemester === 'ALL' ? 'var(--primary, #3b82f6)' : 'var(--bg-surface, #fff)',
-                    color: selectedSemester === 'ALL' ? '#fff' : 'var(--text-secondary, #64748b)',
-                    borderColor: selectedSemester === 'ALL' ? 'var(--primary, #3b82f6)' : 'var(--border-subtle, #e2e8f0)',
-                  }}
-                >
-                  All Semesters ({enrollments.filter(e => e.courseId || e.course).length})
-                </button>
-                {semesterGroups.map((grp) => (
-                  <button
-                    key={grp.id}
-                    onClick={() => setSelectedSemester(grp.id)}
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: '20px',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      border: '1px solid',
-                      transition: 'all 0.2s ease',
-                      background: selectedSemester === grp.id ? 'var(--primary, #3b82f6)' : 'var(--bg-surface, #fff)',
-                      color: selectedSemester === grp.id ? '#fff' : 'var(--text-secondary, #64748b)',
-                      borderColor: selectedSemester === grp.id ? 'var(--primary, #3b82f6)' : 'var(--border-subtle, #e2e8f0)',
-                    }}
-                  >
-                    {grp.name} ({grp.items.length})
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* Semester Sections */}
-          {displayedGroups.length === 0 ? (
-            <EmptyState icon={Library} title="No matching courses" description="Try a different search or semester filter." />
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
-              {displayedGroups.map((grp) => {
-                const totalInSem = grp.items.length;
-                const completedInSem = grp.items.filter(e => (e.progressPercentage ?? 0) >= 100).length;
-                const semAvg = totalInSem > 0 
-                  ? Math.round(grp.items.reduce((sum, e) => sum + (e.progressPercentage || 0), 0) / totalInSem)
-                  : 0;
+          {/* Left Sidebar Semester Navigation + Course Sections */}
+          <div style={{ display: 'grid', gridTemplateColumns: semesterGroups.length > 1 ? '240px 1fr' : '1fr', gap: '24px', alignItems: 'start' }}>
+            
+            {/* LEFT SIDEBAR: Semester Filter */}
+            {semesterGroups.length > 1 && (
+              <div style={{
+                background: 'var(--bg-surface-card, #ffffff)',
+                border: '1px solid var(--border-subtle, #e2e8f0)',
+                borderRadius: 'var(--radius-lg, 14px)',
+                padding: '16px',
+                position: 'sticky',
+                top: '16px',
+                boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.05))'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle, #e2e8f0)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Layers size={18} color="var(--primary, #3b82f6)" />
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Semesters</span>
+                  </div>
+                </div>
 
-                return (
-                  <section key={grp.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    
-                    {/* Semester Header */}
-                    <div style={{
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <button
+                    onClick={() => setSelectedSemester('ALL')}
+                    style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '12px 18px',
-                      background: 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(99,102,241,0.04))',
-                      borderRadius: '12px',
-                      border: '1px solid rgba(59,130,246,0.15)',
-                      flexWrap: 'wrap',
-                      gap: '10px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: '8px',
-                          background: 'var(--primary, #3b82f6)',
-                          color: '#fff',
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      border: selectedSemester === 'ALL' ? '1.5px solid var(--primary, #3b82f6)' : '1px solid var(--border-subtle, #e2e8f0)',
+                      background: selectedSemester === 'ALL' ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-surface, #ffffff)',
+                      color: selectedSemester === 'ALL' ? 'var(--primary, #3b82f6)' : 'var(--text-primary)',
+                      fontWeight: selectedSemester === 'ALL' ? 700 : 500,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>All Semesters</span>
+                    <span style={{ fontSize: '11px', background: selectedSemester === 'ALL' ? 'var(--primary, #3b82f6)' : 'var(--bg-surface-muted, #f1f5f9)', color: selectedSemester === 'ALL' ? '#ffffff' : 'var(--text-muted)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                      {enrollments.filter(e => e.courseId || e.course).length}
+                    </span>
+                  </button>
+
+                  {semesterGroups.map((grp) => {
+                    const isSelected = selectedSemester === grp.id;
+                    return (
+                      <button
+                        key={grp.id}
+                        onClick={() => setSelectedSemester(grp.id)}
+                        style={{
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <Layers size={20} />
-                        </div>
-                        <div>
-                          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                            {grp.name}
-                          </h2>
-                          {grp.programName && (
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted, #64748b)' }}>
-                              {grp.programName}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.85rem' }}>
-                        <span style={{ color: 'var(--text-secondary, #64748b)' }}>
-                          <strong>{totalInSem}</strong> Subjects
+                          justifyContent: 'space-between',
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          border: isSelected ? '1.5px solid var(--primary, #3b82f6)' : '1px solid var(--border-subtle, #e2e8f0)',
+                          background: isSelected ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-surface, #ffffff)',
+                          color: isSelected ? 'var(--primary, #3b82f6)' : 'var(--text-primary)',
+                          fontWeight: isSelected ? 700 : 500,
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <span>{grp.name}</span>
+                        <span style={{ fontSize: '11px', background: isSelected ? 'var(--primary, #3b82f6)' : 'var(--bg-surface-muted, #f1f5f9)', color: isSelected ? '#ffffff' : 'var(--text-muted)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                          {grp.items.length}
                         </span>
-                        <span style={{
-                          padding: '4px 10px',
-                          background: semAvg === 100 ? 'rgba(34,197,94,0.15)' : 'rgba(59,130,246,0.12)',
-                          color: semAvg === 100 ? '#15803d' : '#1d4ed8',
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* RIGHT SIDE: Enrolled Courses Grid */}
+            <div style={{ minWidth: 0 }}>
+              {displayedGroups.length === 0 ? (
+                <EmptyState icon={Library} title="No matching courses" description="Try a different search or semester filter." />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                  {displayedGroups.map((grp) => {
+                    const totalInSem = grp.items.length;
+                    const completedInSem = grp.items.filter(e => (e.progressPercentage ?? 0) >= 100).length;
+                    const semAvg = totalInSem > 0 
+                      ? Math.round(grp.items.reduce((sum, e) => sum + (e.progressPercentage || 0), 0) / totalInSem)
+                      : 0;
+
+                    return (
+                      <section key={grp.id} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 16px',
+                          background: 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(99,102,241,0.04))',
                           borderRadius: '12px',
-                          fontWeight: 700,
-                          fontSize: '12px'
+                          border: '1px solid rgba(59,130,246,0.15)',
+                          flexWrap: 'wrap',
+                          gap: '10px'
                         }}>
-                          {completedInSem}/{totalInSem} Completed ({semAvg}%)
-                        </span>
-                      </div>
-                    </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: '8px',
+                              background: 'var(--primary, #3b82f6)',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Layers size={18} />
+                            </div>
+                            <div>
+                              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                {grp.name}
+                              </h3>
+                              <p style={{ fontSize: '11px', margin: '2px 0 0', color: 'var(--text-muted)' }}>
+                                {completedInSem}/{totalInSem} Subjects Completed ({semAvg}% avg progress)
+                              </p>
+                            </div>
+                          </div>
+                        </div>
 
-                    {/* Courses Grid for this Semester */}
-                    <div className="course-grid">
-                      {grp.items.map((e) => {
-                        const courseObj = (typeof e.courseId === 'object' && e.courseId !== null) ? e.courseId : (e.course || {});
-                        const thumb = courseObj.thumbnailUrl || courseObj.thumbnail || e.thumbnailUrl;
-                        const title = courseObj.title || e.courseTitle || 'Course';
-                        const courseId = courseObj.id || courseObj._id || e.courseId;
+                        <div className="course-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px', marginTop: 0 }}>
+                          {grp.items.map((enrollment) => {
+                            const course = (typeof enrollment.courseId === 'object' && enrollment.courseId !== null)
+                              ? enrollment.courseId
+                              : (enrollment.course || {});
+                            const courseId = course._id || course.id || enrollment.courseId;
+                            const progress = enrollment.progressPercentage ?? 0;
+                            const isComplete = progress >= 100;
+                            const thumb = course.thumbnailUrl || course.thumbnail;
 
-                        return (
-                          <Link 
-                            to={e.status === 'EXPIRED' ? '#' : `/student/my-courses/${courseId}/learn`} 
-                            key={e._id || e.id} 
-                            className="course-card" 
-                            style={e.status === 'EXPIRED' ? { opacity: 0.7 } : {}}
-                          >
-                            <div 
-                              className="course-card__thumb" 
-                              style={{ 
-                                aspectRatio: '16/9', 
-                                backgroundColor: '#0f172a', 
-                                position: 'relative', 
-                                overflow: 'hidden', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center' 
-                              }}
-                            >
-                              {thumb ? (
-                                <img 
-                                  src={buildStaticUrl(thumb)} 
-                                  alt={title}
+                            return (
+                              <div key={enrollment.id || enrollment._id} className="course-card">
+                                <div
+                                  className="course-card__thumb"
                                   style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                    objectPosition: 'center',
-                                    display: 'block'
+                                    backgroundImage: thumb ? `url('${buildStaticUrl(thumb)}')` : undefined,
+                                    backgroundColor: 'var(--brand-surface)'
                                   }}
-                                />
-                              ) : (
-                                <Library size={36} color="#a5b4fc" />
-                              )}
-                              {e.status === 'EXPIRED' && (
-                                <span style={{ position: 'absolute', top: 8, right: 8, background: 'var(--danger, #ef4444)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
-                                  Expired
-                                </span>
-                              )}
-                              {e.progressPercentage >= 100 && (
-                                <span style={{ position: 'absolute', top: 8, left: 8, background: '#10b981', color: 'white', padding: '3px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 3 }}>
-                                  <CheckCircle2 size={12} /> Completed
-                                </span>
-                              )}
-                            </div>
-                            <div className="course-card__body">
-                              <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--text-primary)' }}>{title}</h3>
-                              {e.expiresAt && <p className="text-muted" style={{ fontSize: 'var(--fs-xs)', marginBottom: 'var(--sp-2)' }}>Expires: {new Date(e.expiresAt).toLocaleDateString()}</p>}
-                              <div className="course-card__progress">
-                                <div className="course-card__progress-bar"><span style={{ width: `${e.progressPercentage || 0}%` }} /></div>
-                                <span className="text-muted" style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600 }}>{e.progressPercentage || 0}% complete</span>
-                              </div>
-                              {e.grade && (
-                                <div style={{ marginTop: 'var(--sp-2)' }}>
-                                  <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--color-primary-600)', background: 'var(--color-primary-50)', padding: '2px 6px', borderRadius: 4 }}>
-                                    Grade: {e.grade.grade} ({e.grade.totalScore})
-                                  </span>
+                                >
+                                  {!thumb && <BookOpen size={48} color="var(--brand)" />}
+                                  <div className="course-card__play">
+                                    <PlayCircle size={44} />
+                                  </div>
+                                  {isComplete && (
+                                    <div className="course-card__completed-badge">
+                                      <CheckCircle2 size={13} style={{ marginRight: 4 }} /> Completed
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </section>
-                );
-              })}
+                                <div className="course-card__body">
+                                  <h3>{course.title || enrollment.courseTitle}</h3>
+                                  <div className="course-card__meta">
+                                    <span>{course.credits ? `${course.credits}.00 Credits` : '3.00 Credits'}</span>
+                                    <span>{course.examsCount || 0} Exams</span>
+                                  </div>
+                                  
+                                  <div style={{ margin: 'var(--sp-2) 0' }}>
+                                    <div className="progress-bar" style={{ height: 6 }}>
+                                      <div
+                                        className="progress-bar__fill"
+                                        style={{
+                                          width: `${progress}%`,
+                                          backgroundColor: isComplete ? 'var(--color-success-500, #22c55e)' : 'var(--brand, #7c3aed)'
+                                        }}
+                                      />
+                                    </div>
+                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: 2, display: 'inline-block' }}>
+                                      {progress}% Complete
+                                    </span>
+                                  </div>
+
+                                  <div style={{ marginTop: 'auto', paddingTop: 'var(--sp-2)' }}>
+                                    <Link to={`/student/my-courses/${courseId}/learn`}>
+                                      <Button full size="sm" variant={isComplete ? "outline" : "primary"}>
+                                        {isComplete ? "Review Course" : "Continue Learning"}
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </>
       )}
     </div>

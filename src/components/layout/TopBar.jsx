@@ -41,11 +41,11 @@ export default function TopBar({ onMenuClick, title }) {
 
           let readMap = {};
           try {
-            readMap = JSON.parse(localStorage.getItem(`chat_last_read_${user?.id || user?.userId || user?._id}`) || '{}');
+            readMap = JSON.parse(localStorage.getItem(`chat_last_read_${user?.id || user?.userId || user?._id || localStorage.getItem('authUserId') || 'global_user'}`) || '{}');
           } catch {}
 
           let unread = 0;
-          const uId = user?.id || user?.userId || user?._id;
+          const uId = user?.id || user?.userId || user?._id || localStorage.getItem('authUserId') || 'global_user';
           allConvs.forEach(conv => {
             const lastRead = readMap[conv.id];
             const msgTime = conv.lastMessageAt ? new Date(conv.lastMessageAt).getTime() : 0;

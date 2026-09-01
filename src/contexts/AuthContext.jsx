@@ -35,6 +35,10 @@ export function AuthProvider({ children }) {
     };
     setUser(normalizedUser);
     setRole(normalizedUser.userType);
+    const uId = normalizedUser.id || normalizedUser.userId || normalizedUser._id;
+    if (uId) {
+      localStorage.setItem('authUserId', uId);
+    }
     if (normalizedUser.organizationSlug) {
       localStorage.setItem('orgSlug', normalizedUser.organizationSlug);
     }

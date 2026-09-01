@@ -46,12 +46,15 @@
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: var(--sp-6);
+  border-radius: 14px;
+  padding: 14px 18px;
   box-shadow: var(--shadow-sm), var(--shadow-inset-glow);
-  transition: all 400ms var(--ease-out-expo);
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 /* Animated gradient accent bar at top */
@@ -112,7 +115,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--sp-3);
+  margin-bottom: 6px;
 }
 
 .stat-card__label {
@@ -125,9 +128,9 @@
 }
 
 .stat-card__icon {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-md);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--accent-light);
   color: var(--color-indigo-400);
   display: flex;
@@ -149,7 +152,7 @@
 
 .stat-card__value {
   font-family: var(--font-display);
-  font-size: var(--fs-2xl);
+  font-size: 26px;
   color: var(--text-primary);
   font-weight: 800;
   letter-spacing: -0.02em;

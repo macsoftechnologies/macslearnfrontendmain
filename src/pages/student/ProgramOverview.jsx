@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import PageLoader from '../../components/ui/PageLoader';
 import Modal from '../../components/ui/Modal';
-import { GraduationCap, CheckCircle2, BookOpen, FileText, PlayCircle, Clock, Award, AlertTriangle, AlertOctagon, FileDown } from 'lucide-react';
+import { GraduationCap, Lock, CheckCircle2, BookOpen, FileText, PlayCircle, Clock, Award, AlertTriangle, AlertOctagon, FileDown, Layers, ChevronRight } from 'lucide-react';
 import { buildStaticUrl } from '../../api/client';
 
 export default function ProgramOverview() {
@@ -130,6 +130,16 @@ export default function ProgramOverview() {
       clearInterval(interval);
     };
   }, [id, user]);
+
+  // Auto-dismiss notification banner automatically after 4 seconds
+  useEffect(() => {
+    if (bannerVisible) {
+      const timer = setTimeout(() => {
+        setBannerVisible(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [bannerVisible]);
 
   const handleEnroll = async () => {
     if (selectedCourses.size === 0) {
@@ -322,254 +332,341 @@ export default function ProgramOverview() {
           )}
         </div>
 
-        {/* Chronological Semester Tabs */}
-        {semestersList.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', paddingBottom: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-subtle, #e2e8f0)' }}>
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto' }}>
-              {semestersList.map((sem, sIdx) => {
-                const semCoursesCount = (sem.courseIds || []).length || coursesList.filter(c => c.semesterId === sem.id).length || 5;
-                const isTabActive = selectedSemesterTab === sem.id;
-                return (
-                  <button
-                    key={sem.id || sIdx}
-                    onClick={() => setSelectedSemesterTab(sem.id)}
-                    style={{
-                      padding: '5px 12px',
-                      borderRadius: '16px',
-                      fontSize: '0.8rem',
-                      fontWeight: isTabActive ? 700 : 600,
-                      background: isTabActive ? 'var(--brand, #7c3aed)' : '#f1f5f9',
-                      color: isTabActive ? '#ffffff' : 'var(--text-secondary, #475569)',
-                      border: isTabActive ? 'none' : '1px solid var(--border-subtle, #e2e8f0)',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.15s',
-                      boxShadow: isTabActive ? '0 2px 6px rgba(124, 58, 237, 0.2)' : 'none'
-                    }}
-                  >
-                    {(() => {
-                      const rawName = sem.name || sem.term || `Term ${sIdx + 1}`;
-                      const termFormatted = rawName.replace(/semester/i, 'Term');
-                      const isActiveTerm = sIdx === 0;
-                      return (
-                        <span>
-                          {isActiveTerm ? '🟢 ' : ''}{termFormatted} ({semCoursesCount} Subjects)
-                        </span>
-                      );
-                    })()}
-                  </button>
-                );
-              })}
-            </div>
+        {/* Left Sidebar Term Navigation + Course Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: semestersList.length > 1 ? '216px 1fr' : '1fr', gap: '24px', alignItems: 'start', marginTop: '16px' }}>
+          
+          {/* LEFT SIDEBAR: Academic Terms Navigation */}
+          {semestersList.length > 1 && (
+            <div style={{
+              background: 'var(--bg-surface-card, #ffffff)',
+              border: '1px solid var(--border-subtle, #e2e8f0)',
+              borderRadius: 'var(--radius-lg, 14px)',
+              padding: '16px',
+              position: 'sticky',
+              top: '16px',
+              boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.05))'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle, #e2e8f0)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Layers size={18} color="var(--brand, #7c3aed)" />
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Academic Terms</span>
+                </div>
+                <span style={{ fontSize: '11px', background: 'var(--brand-surface, #f5f3ff)', color: 'var(--brand, #7c3aed)', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                  {semestersList.length} Terms
+                </span>
+              </div>
 
-            {/* Term Action / Lock Helper */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {semestersList.map((sem, sIdx) => {
+                  const semCourseIds = (sem.courseIds && sem.courseIds.length > 0)
+                    ? sem.courseIds
+                    : coursesList.filter(c => c.semesterId === sem.id).map(c => c.id || c._id);
+                  const semCoursesCount = semCourseIds.length || 5;
+                  const isTabActive = selectedSemesterTab === sem.id;
+                  
+                  const completedInSem = semCourseIds.filter(cid => {
+                    const e = enrollmentsMap[cid];
+                    return e && ((e.progressPercentage || 0) >= 100 || e.status === 'COMPLETED');
+                  }).length;
+                  const isSemCompleted = semCoursesCount > 0 && completedInSem === semCoursesCount;
+                  const isSemEnrolled = semCourseIds.some(cid => enrolledCourseIds.has(cid));
+
+                  const rawName = sem.name || sem.term || `Term ${sIdx + 1}`;
+                  const termFormatted = rawName.replace(/semester/i, 'Term');
+
+                  return (
+                    <button
+                      key={sem.id || sIdx}
+                      onClick={() => setSelectedSemesterTab(sem.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        border: isTabActive ? '1.5px solid var(--brand, #7c3aed)' : '1px solid var(--border-subtle, #e2e8f0)',
+                        background: isTabActive ? 'var(--brand-surface, #f5f3ff)' : 'var(--bg-surface, #ffffff)',
+                        color: isTabActive ? 'var(--brand, #7c3aed)' : 'var(--text-primary)',
+                        fontWeight: isTabActive ? 700 : 500,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isTabActive ? '0 2px 8px rgba(124, 58, 237, 0.12)' : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {isSemCompleted ? (
+                            <CheckCircle2 size={15} color="#16a34a" />
+                          ) : isSemEnrolled ? (
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+                          ) : (
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#cbd5e1', display: 'inline-block' }} />
+                          )}
+                          <span style={{ fontWeight: isTabActive ? 800 : 600 }}>{termFormatted}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '16px' }}>
+                          {isSemCompleted ? 'All Completed ✓' : `${semCoursesCount} Subjects`}
+                        </span>
+                      </div>
+                      {isTabActive && <ChevronRight size={16} color="var(--brand, #7c3aed)" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* RIGHT SIDE: Current Term Curriculum & Course Cards */}
+          <div style={{ minWidth: 0 }}>
+            {/* Term Action Header */}
             {(() => {
               const activeSem = semestersList.find(s => s.id === user?.semesterId) || semestersList[0];
               const currentSem = semestersList.find(s => s.id === selectedSemesterTab) || semestersList[0];
               if (!currentSem) return null;
 
               const isCurrentActive = currentSem.id === activeSem?.id;
-
-              if (!isCurrentActive) {
-                return (
-                  <span style={{ background: '#fef3c7', color: '#92400e', padding: '6px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #fde68a' }}>
-                    🔒 Upcoming Term (Unlocks in Next Academic Cycle)
-                  </span>
-                );
-              }
-
               const semCourseIds = (currentSem.courseIds && currentSem.courseIds.length > 0)
                 ? currentSem.courseIds
                 : coursesList.filter(c => c.semesterId === currentSem.id).map(c => c.id || c._id);
               const unenrolledSemIds = semCourseIds.filter(cid => !enrolledCourseIds.has(cid));
-              if (unenrolledSemIds.length === 0) return null;
+              const allSelected = unenrolledSemIds.length > 0 && unenrolledSemIds.every(cid => selectedCourses.has(cid));
 
-              const allSelected = unenrolledSemIds.every(cid => selectedCourses.has(cid));
-
-              return (
-                <button
-                  onClick={() => {
-                    const newSet = new Set(selectedCourses);
-                    if (allSelected) {
-                      unenrolledSemIds.forEach(cid => newSet.delete(cid));
-                    } else {
-                      unenrolledSemIds.forEach(cid => newSet.add(cid));
-                    }
-                    setSelectedCourses(newSet);
-                  }}
-                  style={{
-                    background: '#eff6ff',
-                    color: '#2563eb',
-                    border: '1px solid #bfdbfe',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  ✓ {allSelected ? 'Deselect Term Subjects' : `Select All ${unenrolledSemIds.length} Subjects in ${(currentSem.name || 'this Term').replace(/semester/i, 'Term')}`}
-                </button>
-              );
-            })()}
-          </div>
-        )}
-        
-        {coursesList.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
-            No courses available yet.
-          </div>
-        ) : (
-          <div className="course-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '14px', marginTop: '14px' }}>
-            {coursesList
-              .filter(course => {
-                if (selectedSemesterTab === 'ALL') return true;
-                const sem = semestersList.find(s => s.id === selectedSemesterTab);
-                if (sem && Array.isArray(sem.courseIds)) {
-                  return sem.courseIds.includes(course.id || course._id);
-                }
-                return course.semesterId === selectedSemesterTab;
-              })
-              .map(course => {
-              
-              // Calculate price based on student's region
-              let displayPrice = 'Free';
-              let amount = null;
-              let currency = 'USD';
-              
-              if (user?.regionId && Array.isArray(course.regionalPrices)) {
-                const override = course.regionalPrices.find(rp => rp.regionId === user.regionId);
-                if (override && override.price !== undefined && override.price !== null) {
-                  amount = override.price;
-                  currency = override.currency || 'USD';
-                }
-              }
-              
-              if (amount === null) {
-                if (course.pricing?.isPaid) {
-                  amount = course.pricing.amount;
-                  currency = course.pricing.currency || 'USD';
-                } else if (course.price) {
-                  amount = course.price;
-                }
-              }
-              
-              if (amount !== null && amount > 0) {
-                displayPrice = `${currency} ${Number(amount).toFixed(2)}`;
-              }
-
-              const courseId = course.id || course._id;
-              const isSelected = selectedCourses.has(courseId);
-              const isAlreadyEnrolled = enrolledCourseIds.has(courseId);
-              const myEnrollment = enrollmentsMap[courseId];
+              const rawName = currentSem.name || currentSem.term || 'Term';
+              const termTitle = rawName.replace(/semester/i, 'Term');
 
               return (
-                <div 
-                  key={courseId} 
-                  className="course-card" 
-                  onClick={() => {
-                    if (isAlreadyEnrolled) return;
-                    const currentActiveSemId = (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id;
-                    const isFutureTerm = selectedSemesterTab && currentActiveSemId && selectedSemesterTab !== currentActiveSemId;
-                    if (isFutureTerm) {
-                      toast.error('This is an upcoming term. You can only enroll in the currently active term.');
-                      return;
-                    }
-                    const newSet = new Set(selectedCourses);
-                    if (isSelected) newSet.delete(courseId);
-                    else newSet.add(courseId);
-                    setSelectedCourses(newSet);
-                  }} 
-                  style={{ 
-                    cursor: isAlreadyEnrolled ? 'default' : (selectedSemesterTab !== (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id) ? 'not-allowed' : 'pointer',
-                    border: isSelected ? '2px solid var(--brand)' : isAlreadyEnrolled ? '2px solid #22c55e' : undefined,
-                    boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.08)' : undefined,
-                    backgroundColor: isAlreadyEnrolled ? '#f0fdf4' : (selectedSemesterTab !== (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id) ? '#f8fafc' : undefined,
-                    opacity: isAlreadyEnrolled ? 0.9 : (selectedSemesterTab !== (semestersList.find(s => s.id === user?.semesterId) || semestersList[0])?.id) ? 0.75 : 1,
-                    transition: 'all 0.2s ease',
-                    borderRadius: '10px'
-                  }}
-                >
-                  <div 
-                    className="course-card__thumb" 
-                    style={{ 
-                      height: 120,
-                      backgroundColor: '#0f172a', 
-                      position: 'relative', 
-                      overflow: 'hidden', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center' 
-                    }}
-                  >
-                    {(course.thumbnailUrl || course.thumbnail) ? (
-                      <img 
-                        src={buildStaticUrl(course.thumbnailUrl || course.thumbnail)} 
-                        alt={course.title}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          objectPosition: 'center',
-                          display: 'block'
-                        }}
-                      />
-                    ) : (
-                      <BookOpen size={36} color="#a5b4fc" />
-                    )}
-                  </div>
-                  <div className="course-card__body" style={{ padding: '12px 14px' }}>
-                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
-                      <h3 style={{ fontSize: '0.92rem', fontWeight: 700, margin: '0 0 4px', lineHeight: 1.35 }}>{course.title}</h3>
-                      <div style={{
-                        width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                        border: isSelected || isAlreadyEnrolled ? 'none' : '2px solid #94a3b8',
-                        backgroundColor: isAlreadyEnrolled ? '#22c55e' : isSelected ? '#7c3aed' : 'transparent',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}>
-                        {(isSelected || isAlreadyEnrolled) && <CheckCircle2 size={12} color="#fff" />}
-                      </div>
-                    </div>
-
-                    <div className="course-card__meta" style={{ gap: '6px', fontSize: '11px', margin: '4px 0 8px' }}>
-                      <div className="row" style={{ gap: '6px', fontSize: '11px' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>{course.credits || 0} Credits</span>
-                        <span style={{ color: 'var(--border)' }}>|</span>
-                        <span style={{ color: 'var(--color-primary-600)' }}>{course.examsCount || 0} Exams</span>
-                      </div>
-                      
-                      {!isAlreadyEnrolled ? (
-                        <span className="course-card__price" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '12px' }}>
-                          {displayPrice}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 18px',
+                  background: isCurrentActive ? 'var(--bg-surface-card, #ffffff)' : '#fffbeb',
+                  border: isCurrentActive ? '1px solid var(--border-subtle, #e2e8f0)' : '1px solid #fcd34d',
+                  borderRadius: '12px',
+                  marginBottom: '16px',
+                  flexWrap: 'wrap',
+                  gap: '10px'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {termTitle} — {semCourseIds.length} Subjects
+                      </h3>
+                      {isCurrentActive ? (
+                        <span style={{ fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '10px' }}>
+                          🟢 Active Term
                         </span>
                       ) : (
-                        <div style={{ marginTop: '2px', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <span style={{ fontWeight: 700, color: '#166534' }}>Enrolled</span>
-                          {myEnrollment?.curriculum?.videos && (
-                            <div style={{ color: 'var(--brand)', fontWeight: 600, fontSize: '11px' }}>
-                              Videos Left: {Math.max(0, myEnrollment.curriculum.videos.total - myEnrollment.curriculum.videos.completed)}
+                        <span style={{ fontSize: '11px', fontWeight: 700, background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '10px' }}>
+                          🔒 Upcoming Term
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {!isCurrentActive ? (
+                        'This term will unlock in the next academic cycle. You can preview subjects below.'
+                      ) : unenrolledSemIds.length === 0 ? (
+                        '✓ You are enrolled in all subjects for this term'
+                      ) : (
+                        `${unenrolledSemIds.length} subjects available to enroll`
+                      )}
+                    </p>
+                  </div>
+
+                  {!isCurrentActive ? (
+                    <span style={{ background: '#fef3c7', color: '#92400e', padding: '6px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #fde68a' }}>
+                      <Lock size={14} /> Upcoming Term (Locked)
+                    </span>
+                  ) : unenrolledSemIds.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const newSet = new Set(selectedCourses);
+                        if (allSelected) {
+                          unenrolledSemIds.forEach(cid => newSet.delete(cid));
+                        } else {
+                          unenrolledSemIds.forEach(cid => newSet.add(cid));
+                        }
+                        setSelectedCourses(newSet);
+                      }}
+                      style={{
+                        background: '#eff6ff',
+                        color: '#2563eb',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '8px',
+                        padding: '6px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      ✓ {allSelected ? 'Deselect Term Subjects' : `Select All ${unenrolledSemIds.length} Subjects in ${termTitle}`}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Course Cards Grid */}
+            {coursesList.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
+                No courses available yet.
+              </div>
+            ) : (
+              <div className="course-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px', marginTop: 0 }}>
+                {coursesList
+                  .filter(course => {
+                    if (selectedSemesterTab === 'ALL') return true;
+                    const sem = semestersList.find(s => s.id === selectedSemesterTab);
+                    if (sem && Array.isArray(sem.courseIds)) {
+                      return sem.courseIds.includes(course.id || course._id);
+                    }
+                    return course.semesterId === selectedSemesterTab;
+                  })
+                  .map(course => {
+                  
+                  const activeSem = semestersList.find(s => s.id === user?.semesterId) || semestersList[0];
+                  const currentSem = semestersList.find(s => s.id === selectedSemesterTab) || semestersList[0];
+                  const isCurrentActive = currentSem ? (currentSem.id === activeSem?.id) : true;
+
+                  // Calculate price based on student's region
+                  let displayPrice = 'Free';
+                  let amount = null;
+                  let currency = 'USD';
+                  
+                  if (user?.regionId && Array.isArray(course.regionalPrices)) {
+                    const override = course.regionalPrices.find(rp => rp.regionId === user.regionId);
+                    if (override && override.price !== undefined && override.price !== null) {
+                      amount = override.price;
+                      currency = override.currency || 'USD';
+                    }
+                  }
+                  
+                  if (amount === null && course.basePrice !== undefined && course.basePrice !== null) {
+                    amount = course.basePrice;
+                    currency = course.currency || 'USD';
+                  }
+                  
+                  if (amount !== null && amount !== undefined) {
+                    const symbol = currency === 'INR' ? '₹' : '$';
+                    displayPrice = `${symbol}${amount}`;
+                  }
+                  
+                  const courseId = course.id || course._id;
+                  const isCourseEnrolled = enrolledCourseIds.has(courseId);
+                  const isSelected = selectedCourses.has(courseId);
+                  const canSelect = isCurrentActive && !isCourseEnrolled;
+                  
+                  return (
+                    <div 
+                      key={courseId} 
+                      className="course-card" 
+                      onClick={() => canSelect && toggleCourseSelect(courseId)}
+                      style={{ 
+                        border: isSelected ? '2px solid var(--brand)' : isCourseEnrolled ? '2px solid #22c55e' : !isCurrentActive ? '1px dashed #cbd5e1' : '1px solid var(--border-subtle)',
+                        boxShadow: isSelected ? '0 0 0 1px var(--brand), 0 4px 12px rgba(124, 58, 237, 0.15)' : undefined,
+                        cursor: canSelect ? 'pointer' : 'default',
+                        opacity: !isCurrentActive && !isCourseEnrolled ? 0.85 : 1
+                      }}
+                    >
+                      <div 
+                        className="course-card__thumb"
+                        style={{
+                          backgroundImage: (course.thumbnailUrl || course.thumbnail) ? `url('${buildStaticUrl(course.thumbnailUrl || course.thumbnail)}')` : undefined,
+                          backgroundColor: 'var(--brand-surface)'
+                        }}
+                      >
+                        {!(course.thumbnailUrl || course.thumbnail) && <BookOpen size={48} color="var(--brand)" />}
+                        {isSelected && (
+                          <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: 'var(--brand)', color: 'white', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            ✓
+                          </div>
+                        )}
+                        {!isCurrentActive && !isCourseEnrolled && (
+                          <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(15, 23, 42, 0.75)', color: '#fef3c7', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Lock size={12} /> Upcoming
+                          </div>
+                        )}
+                      </div>
+                      <div className="course-card__body">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                          <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>{course.title}</h3>
+                          {isCourseEnrolled && (
+                            <span title="Enrolled" style={{ display: 'flex', alignItems: 'center', color: '#16a34a' }}>
+                              <CheckCircle2 size={18} />
+                            </span>
+                          )}
+                        </div>
+                        <div className="course-card__meta" style={{ marginTop: 'auto', paddingTop: 'var(--sp-2)' }}>
+                          <span>{course.credits ? `${course.credits}.00 Credits` : '3.00 Credits'}</span>
+                          <span>{course.examsCount || 0} Exams</span>
+                          {isCourseEnrolled ? (
+                            <span style={{ color: '#16a34a', fontWeight: 700 }}>Enrolled</span>
+                          ) : !isCurrentActive ? (
+                            <span style={{ color: '#94a3b8', fontWeight: 600 }}>Unlocks Next Term</span>
+                          ) : (
+                            <span style={{ color: 'var(--brand)', fontWeight: 700 }}>{displayPrice}</span>
+                          )}
+                        </div>
+                        <div style={{ marginTop: 'var(--sp-3)' }}>
+                          {isCourseEnrolled ? (
+                            <Link to={`/student/my-courses/${courseId}/learn`}>
+                              <Button full size="sm">Continue Learning</Button>
+                            </Link>
+                          ) : !isCurrentActive ? (
+                            <Button 
+                              full 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/student/programs/${id}/courses/${courseId}`);
+                              }}
+                            >
+                              Preview Course Details
+                            </Button>
+                          ) : (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <Button 
+                                full 
+                                size="sm" 
+                                variant={isSelected ? "primary" : "outline"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleCourseSelect(courseId);
+                                }}
+                              >
+                                {isSelected ? "Selected ✓" : "Select Course"}
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                style={{ padding: '0 10px' }}
+                                title="Course Details"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/student/programs/${id}/courses/${courseId}`);
+                                }}
+                              >
+                                Preview
+                              </Button>
                             </div>
                           )}
                         </div>
-                      )}
+                      </div>
                     </div>
-                    <div style={{ marginTop: 'auto', paddingTop: '4px' }}>
-                      <Button full size="sm" variant="outline" style={{ fontSize: '12px', padding: '5px 10px' }} onClick={(e) => { e.stopPropagation(); navigate(`/student/programs/${id}/courses/${courseId}`); }}>
-                        Preview Course Details
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
-
-      {/* ENROLLMENT MODAL */}
+{/* ENROLLMENT MODAL */}
       <Modal open={enrollModalOpen} onClose={() => setEnrollModalOpen(false)} title="Confirm Course Enrollment" width={700}>
         <div className="stack" style={{ gap: '2rem' }}>
 

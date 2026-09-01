@@ -19,7 +19,7 @@ import './ChatHub.css';
 
 export default function ChatHub() {
   const { user } = useAuth();
-  const userId = user?.id || user?.userId || user?._id;
+  const userId = user?.id || user?.userId || user?._id || localStorage.getItem('authUserId') || 'global_user';
   const isStaff = user?.userType === 'ORG_USER' || user?.userType === 'FACULTY' || user?.userType === 'SUPER_ADMIN';
 
   const [inbox, setInbox] = useState({ directChats: [], batchGroups: [], courseGroups: [] });

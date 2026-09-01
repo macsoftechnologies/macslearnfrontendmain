@@ -161,7 +161,7 @@
   --backdrop-blur: blur(16px);
   --backdrop-blur-heavy: blur(24px);
   --backdrop-blur-light: blur(8px);
-  --sidebar-w: 260px;
+  --sidebar-w: 216px;
   --topbar-h: 68px;
 
   /* ---- Animation Tokens ---- */

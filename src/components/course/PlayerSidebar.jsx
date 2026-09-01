@@ -80,15 +80,15 @@ export default function PlayerSidebar({
                   >
                     <span className="player__lesson-status">
                       {completed ? (
-                        <CheckCircle2 size={16} color="var(--success)" />
+                        <CheckCircle2 size={13} color="var(--success)" />
                       ) : inProgress ? (
-                        <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--color-amber-500)', borderTopColor: 'transparent', display: 'inline-block' }} />
+                        <span style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid var(--color-amber-500)', borderTopColor: 'transparent', display: 'inline-block' }} />
                       ) : (
-                        <Circle size={16} color="var(--color-slate-400)" />
+                        <Circle size={13} color="var(--color-slate-400)" />
                       )}
                     </span>
                     <span className="player__lesson-icon">
-                      {lesson.type === 'VIDEO' ? <Video size={14} /> : <FileText size={14} />}
+                      {lesson.type === 'VIDEO' ? <Video size={12} /> : <FileText size={12} />}
                     </span>
                     <span className="player__lesson-info">
                       <span className="player__lesson-name">{lesson.title}</span>
@@ -112,7 +112,7 @@ export default function PlayerSidebar({
                           onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--brand)'}
                           onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
                         >
-                          <FileText size={14} color="var(--brand)" />
+                          <FileText size={12} color="var(--brand)" />
                           <span style={{ fontSize: '12px', flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name || 'Document'}</span>
                         </button>
                       )) : lesson.contentUrl ? (
@@ -122,7 +122,7 @@ export default function PlayerSidebar({
                           onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--brand)'}
                           onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
                         >
-                          <FileText size={14} color="var(--brand)" />
+                          <FileText size={12} color="var(--brand)" />
                           <span style={{ fontSize: '12px', flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Supplemental Document</span>
                         </button>
                       ) : null}

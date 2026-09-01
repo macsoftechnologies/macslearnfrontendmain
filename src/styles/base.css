@@ -213,9 +213,9 @@ html {
 
 .grid-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--sp-5);
-  margin-bottom: var(--sp-8);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: var(--sp-6);
 }
 
 /* Stagger stat card entrance */

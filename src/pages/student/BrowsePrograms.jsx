@@ -24,7 +24,7 @@ export default function BrowsePrograms() {
       return;
     }
 
-    const userId = user?.id || user?._id;
+    const userId = user?.id || user?.userId || user?._id;
     if (!userId) {
       setLoading(false);
       return;
@@ -35,28 +35,63 @@ export default function BrowsePrograms() {
       studentsApi.getEnrollments(userId).catch(() => ({ data: { data: [] } })),
       programsApi.list({ status: 'PUBLISHED' }).catch(() => ({ data: { data: [] } }))
     ]).then(([enrollRes, progsRes]) => {
-      const enrollList = enrollRes.data?.data || [];
-      const allProgs = progsRes.data?.data || [];
+      const enrollList = enrollRes.data?.data || enrollRes.data || [];
+      const allProgs = progsRes.data?.data || progsRes.data || [];
 
       // Extract unique assigned program IDs from student enrollments
       const enrolledProgramIds = [
         ...new Set(
-          enrollList
+          (Array.isArray(enrollList) ? enrollList : [])
             .map((e) => e.programId || e.program?.id || e.program_id)
             .filter(Boolean)
         )
       ];
 
-      // Match with full program details
-      const matched = allProgs.filter((p) => enrolledProgramIds.includes(p.id || p._id));
+      // 1. Check if user is enrolled in specific program(s)
+      let matched = allProgs.filter((p) => enrolledProgramIds.includes(p.id || p._id));
 
-      // If student has exactly 1 assigned program, redirect directly into the curriculum
+      // 2. If no direct enrollment record yet, match strictly against registered profile details
+      if (matched.length === 0) {
+        const cp = user?.customProfile || {};
+        const interested = cp.interestedCourse || 
+                           cp['Course you are interested in'] ||
+                           cp.courseInterestedIn ||
+                           cp.course ||
+                           cp.program ||
+                           user?.programName ||
+                           user?.programId;
+        if (interested) {
+          const targetStr = String(interested).toLowerCase().trim();
+          
+          // Strict exact match first
+          const exactMatches = allProgs.filter((p) => {
+            const pid = (p.id || p._id || '').toLowerCase();
+            const pname = (p.name || '').toLowerCase().trim();
+            const ptitle = (p.degreeTitle || '').toLowerCase().trim();
+            const pcode = (p.code || '').toLowerCase().trim();
+            return pid === targetStr || pname === targetStr || ptitle === targetStr || pcode === targetStr;
+          });
+
+          if (exactMatches.length > 0) {
+            matched = exactMatches;
+          } else {
+            // Fallback to fuzzy prefix match
+            matched = allProgs.filter((p) => {
+              const pname = (p.name || '').toLowerCase().trim();
+              return pname.startsWith(targetStr) || targetStr.startsWith(pname);
+            });
+          }
+        }
+      }
+
+      // If exactly 1 matching program is found, go directly to that program's curriculum
       if (matched.length === 1) {
         navigate(`/student/programs/${matched[0].id || matched[0]._id}`, { replace: true });
         return;
       }
 
-      setAssignedPrograms(matched);
+      // If multiple matched, or fallback to all published programs for this institution
+      setAssignedPrograms(matched.length > 0 ? matched : allProgs);
       setLoading(false);
     }).catch(() => {
       setLoading(false);
@@ -80,7 +115,7 @@ export default function BrowsePrograms() {
 
       {assignedPrograms.length > 1 && (
         <div className="row" style={{ marginBottom: 'var(--sp-6)' }}>
-          <SearchBar value={search} onChange={setSearch} placeholder="Search your programs…" />
+          <SearchBar value={search} onChange={setSearch} placeholder="Search programs…" />
         </div>
       )}
 
@@ -89,8 +124,8 @@ export default function BrowsePrograms() {
       ) : filteredPrograms.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
-          title="No Degree Programs Assigned"
-          description="You do not have any degree programs assigned to your student account yet. Please contact your institution administrator."
+          title="No Degree Programs Available"
+          description="There are currently no degree programs available. Please contact your administrator."
         />
       ) : (
         <div className="course-grid">
@@ -108,7 +143,7 @@ export default function BrowsePrograms() {
                   backgroundColor: 'var(--brand-surface)'
                 }}
               >
-                {!(p.thumbnailUrl || p.thumbnail) && <GraduationCap size={48} color="var(--brand)" />}
+                {!(p.thumbnailUrl || p.thumbnail) && <GraduationCap size={40} color="var(--brand)" />}
               </div>
               <div className="course-card__body">
                 <h3>{p.name}</h3>

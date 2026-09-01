@@ -322,7 +322,7 @@ const SemestersPage = () => {
 
       {/* LEVEL 1: ALL PROGRAMS CARDS */}
       {!activeProgram ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: '1.5rem' }}>
           {programs.map((prog) => {
             const progSems = semesters.filter(s => s.programId === prog.id);
             const isConfigured = progSems.length > 0;

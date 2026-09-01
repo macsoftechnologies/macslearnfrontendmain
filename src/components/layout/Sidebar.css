@@ -37,17 +37,17 @@
 .sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: var(--sp-2) var(--sp-3) var(--sp-6);
+  gap: 10px;
+  padding: var(--sp-2) var(--sp-2) var(--sp-4);
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-4);
   position: relative;
   z-index: 1;
 }
 
 .sidebar__brand-mark {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-md);
   background: var(--gradient-hero);
   background-size: 200% 200%;
@@ -74,7 +74,7 @@
 .sidebar__brand-name {
   display: block;
   font-family: var(--font-display);
-  font-size: var(--fs-base);
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.01em;
@@ -107,11 +107,11 @@
 .sidebar__link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 14px;
+  gap: 10px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: var(--fs-sm);
+  font-size: 13px;
   font-weight: 500;
   transition: all var(--transition-fast);
   position: relative;

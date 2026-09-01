@@ -364,7 +364,7 @@ export default function LiveSessions() {
           action={<Button icon={Plus} onClick={() => openScheduleModal()}>Schedule Call</Button>}
         />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 400px))', gap: '1.25rem' }}>
           {filteredSessions.map((session) => {
             const isCompleted = session.status === 'COMPLETED';
             const attCount = session.attendeeCount || (session.attendees ? session.attendees.length : 0);

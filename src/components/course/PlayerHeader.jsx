@@ -54,14 +54,7 @@ export default function PlayerHeader({
       </div>
 
       <div className="player-header__right">
-        <button
-          className="player-header__nav-btn player-header__nav-btn--prev"
-          onClick={() => setDiscussionSidebarOpen(true)}
-          style={{ gap: 6 }}
-        >
-          <MessageSquare size={14} />
-          <span className="nav-label">Chat</span>
-        </button>
+        
         {!!activeLesson?.videoUrl && !currentIsCompleted ? (
           <button
             className="player-header__nav-btn player-header__nav-btn--next"

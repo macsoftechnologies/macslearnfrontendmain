@@ -239,19 +239,7 @@ export default function Results() {
                       );
                     },
                   },
-                  {
-                    key: 'action',
-                    header: 'Action',
-                    render: (r) => (
-                      <Link 
-                        to={`/student/my-courses/${r.courseId || r.course?.id || r.course?._id}/learn`}
-                        className="btn btn-outline" 
-                        style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 600 }}
-                      >
-                        Open Course
-                      </Link>
-                    ),
-                  },
+                  
                 ]}
                 rows={enrollments}
               />
