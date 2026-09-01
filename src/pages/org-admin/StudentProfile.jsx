@@ -782,7 +782,7 @@ export default function StudentProfile() {
                                             const vqPassedCount = vqExams.filter(e => e.isPassed).length;
                                             const vqTotalCount = vqExams.length;
 
-                                            const isDminProg = /ministry|dmin/i.test(student?.program?.name || student?.degree || student?.department || '');
+                                            const isDminProg = /ministry|dmin/i.test(profile?.program?.name || profile?.degree || profile?.department || '');
                                             const ciaW = isDminProg ? 55 : 65;
                                             const attW = 5;
                                             const examW = isDminProg ? 40 : 30;
